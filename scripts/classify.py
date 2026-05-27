@@ -79,7 +79,7 @@ def classify_access_point(site: dict[str, Any]) -> dict[str, Any]:
         access_type = "dock"
     else:
         access_type = (
-            "bank"  # default for river/lake shore bank access; park_shore also valid per schema
+            "bank"  # default for river/lake shore bank access; park_shore (and others) valid per full schema + DESIGN but PR1 sample only uses bank/pier via direct-attr path (Issue 14)
         )
 
     # All PR1 samples are high-confidence verified public shore access

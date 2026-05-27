@@ -18,7 +18,11 @@ python -m scripts.etl_sample
 
 # Reproducible via Docker (recommended for GDAL/tippecanoe)
 docker build -f Dockerfile.etl -t fishmap-etl .
+# Unix / Git Bash:
 docker run --rm -v $(pwd)/data:/data fishmap-etl make etl-sample
+# Windows PowerShell (Issue 5 fix):
+#   docker run --rm -v ${PWD}/data:/data fishmap-etl make etl-sample
+#   (Docker Desktop Windows volume paths may need /c/Users/... or use WSL2 for best results)
 ```
 
 This produces:

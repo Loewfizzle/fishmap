@@ -2,6 +2,8 @@ import { useState } from 'react'
 
 // PR 1 sample data (sourced directly from data/processed/access_points_sample.geojson
 // produced by `make etl-sample`). Inline for reliable dev server in bootstrap.
+// Issue 9 note: This is a curated mirror for the stub (PR2 will load the real JSON).
+// Citations kept in sync with ETL output + manifest.
 const SAMPLE_SITES = [
   {
     id: "gr-fishladder-001",
@@ -14,7 +16,8 @@ const SAMPLE_SITES = [
     last_verified: "2026-03-15",
     sources: [
       { name: "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources", url: "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce", retrieved: "2026-05-20" },
-      { name: "City of Grand Rapids Parks (GRData Open Data)", url: "https://grdata-grandrapids.opendata.arcgis.com/", retrieved: "2026-05-20" }
+      { name: "City of Grand Rapids Parks (GRData Open Data)", url: "https://grdata-grandrapids.opendata.arcgis.com/", retrieved: "2026-05-20" },
+      { name: "Kent County Parks & GIS Open Data", url: "https://kentcountymi-accesskent.opendata.arcgis.com/", retrieved: "2026-05-20" }
     ],
     notes: "Excellent shore and wade fishing below dam. Strong current warning."
   },
@@ -64,9 +67,9 @@ const SAMPLE_SITES = [
 ]
 
 function App() {
-  const [showOnlyShoreDock] = useState(true)
+  const [_showOnlyShoreDock] = useState(true)  // Issue 17: _ prefix signals stub (unused setter; toggle lands in PR2)
 
-  const filtered = showOnlyShoreDock
+  const filtered = _showOnlyShoreDock
     ? SAMPLE_SITES.filter(s => ['bank', 'dock', 'pier', 'wade', 'road_end', 'park_shore'].includes(s.access_type))
     : SAMPLE_SITES
 

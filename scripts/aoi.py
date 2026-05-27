@@ -63,7 +63,7 @@ def build_aoi_geojson() -> dict:
     return {
         "type": "FeatureCollection",
         "name": "aoi_40mi_grand_rapids",
-        "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::4326"}},
+        # "crs" removed per RFC 7946 (Issue 13); EPSG:4326 is implicit for GeoJSON + documented in DESIGN/ETL-SPEC/aoi.py
         "features": [feature],
     }
 

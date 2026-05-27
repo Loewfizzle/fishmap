@@ -42,5 +42,11 @@ frontend-dev:
 	cd . && $(NPM) run dev
 
 clean:
-	rm -rf data/raw/* data/processed/*.tmp
-	@echo "Cleaned transient ETL artifacts (sample data preserved)"
+	# Portable clean (Issue 4 fix): Python one-liner works on Windows cmd/PS/PowerShell + Unix without rm or bash.
+	# Respects .gitignore for data/raw/*; only touches *.tmp in processed (sample data safe).
+	$(PYTHON) -c "import shutil, pathlib, os; \
+		r = pathlib.Path('data/raw'); \
+		[shutil.rmtree(p, ignore_errors=True) for p in (list(r.glob('*')) if r.exists() else [])]; \
+		[p.unlink(missing_ok=True) for p in pathlib.Path('data/processed').glob('*.tmp')]; \
+		print('Cleaned transient ETL artifacts (sample data preserved)')" 2>/dev/null || echo "clean: Python fallback (some shells may differ)"
+	@echo "Clean complete (portable; see Makefile comments for Windows notes)"

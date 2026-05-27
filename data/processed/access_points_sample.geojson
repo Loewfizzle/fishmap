@@ -1,12 +1,6 @@
 {
   "type": "FeatureCollection",
   "name": "fishmap_access_points_sample_pr1",
-  "crs": {
-    "type": "name",
-    "properties": {
-      "name": "urn:ogc:def:crs:EPSG::4326"
-    }
-  },
   "features": [
     {
       "type": "Feature",

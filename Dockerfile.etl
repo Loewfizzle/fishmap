@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # This step is slow; in real CI we often use a pre-built or skip full binary for dry-run validation only.
 RUN curl -sL https://github.com/mapbox/tippecanoe/archive/refs/tags/2.34.1.tar.gz | tar xz -C /tmp && \
     cd /tmp/tippecanoe-2.34.1 && \
-    make -j$(nproc) && \
+    make -j$(nproc 2>/dev/null || echo 2) && \
     make install && \
     rm -rf /tmp/tippecanoe-2.34.1
 

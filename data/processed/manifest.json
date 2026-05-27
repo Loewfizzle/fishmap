@@ -1,5 +1,5 @@
 {
-  "etl_run_date": "2026-05-27T03:41:43Z",
+  "etl_run_date": "2026-05-27T03:53:21Z",
   "aoi_center": [
     -85.6681,
     42.9634
@@ -13,7 +13,7 @@
       "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
       "downloaded": "2026-05-20 (manual verified extract for PR1 bootstrap)",
       "record_count": 4,
-      "sha256": "manual-curation-pr1-772cb425472a",
+      "sha256": "N/A-manual-curation-pr1-772cb425472a",
       "notes": "Hand-curated from portal patterns + public park maps for 4 high-confidence shore sites. Full automation later."
     },
     {
@@ -21,13 +21,13 @@
       "url": "https://grdata-grandrapids.opendata.arcgis.com/ + https://kentcountymi-accesskent.opendata.arcgis.com/",
       "downloaded": "2026-05-20",
       "record_count": 4,
-      "sha256": "manual-curation-pr1-240f8a5e07b8"
+      "sha256": "N/A-manual-curation-pr1-240f8a5e07b8"
     }
   ],
   "output": {
     "access_points_sample": {
       "path": "data/processed/access_points_sample.geojson",
-      "sha256": "b32c03a74fb02a74616e6ad0b040064ce71928dbe5a821a6b362ca5d341c8b13",
+      "sha256": "ace4f20c85b6a21c29cc84eaa42452857e481e402746a4b53907a51b9f19fd5c",
       "feature_count": 4
     }
   },

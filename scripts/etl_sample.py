@@ -3,6 +3,7 @@
 scripts/etl_sample.py
 
 PR 1 main entrypoint: `make etl-sample` or `python -m scripts.etl_sample`
+(Always invoke via `python -m scripts.*` from repo root or `make` for reliable relative imports per Issue 15)
 
 Produces the first independently valuable deliverable:
 - data/processed/access_points_sample.geojson (4 real, fully attributed shore access points)
@@ -98,14 +99,22 @@ def validate_feature(feat: dict[str, Any]) -> list[str]:
     if geom.get("type") != "Point" or len(geom.get("coordinates", [])) != 2:
         errs.append("geometry must be Point [lon, lat]")
 
+    # Guarded numeric checks (Issue 1 fix): never crash on missing/None lat/lon.
+    # Collects all errors gracefully for CI/make etl-validate robustness.
     lat = props.get("lat")
     lon = props.get("lon")
-    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
-        errs.append("lat/lon out of range")
-
-    # Rough AOI containment (40mi ~0.58 deg rough; real check uses aoi in full ETL)
-    if not (42.3 < lat < 43.6 and -86.3 < lon < -85.0):
-        errs.append("outside approximate 40-mile Grand Rapids AOI")
+    if lat is None or lon is None:
+        errs.append("lat/lon missing (required numeric fields)")
+    else:
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            errs.append("lat/lon out of range")
+        # Rough AOI containment (40mi ~0.58 deg rough; real check uses aoi in full ETL)
+        if not (42.3 < lat < 43.6 and -86.3 < lon < -85.0):
+            errs.append("outside approximate 40-mile Grand Rapids AOI")
+        # Issue 10 fix: basic consistency between duplicated lat/lon (per DESIGN example) and geometry
+        coords = geom.get("coordinates", [])
+        if len(coords) == 2 and (abs(lat - coords[1]) > 1e-6 or abs(lon - coords[0]) > 1e-6):
+            errs.append("lat/lon in properties inconsistent with geometry.coordinates")
 
     return errs
 
@@ -123,7 +132,7 @@ def build_manifest(sites: list[dict[str, Any]], geojson_text: str) -> dict[str, 
             "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
             "downloaded": "2026-05-20 (manual verified extract for PR1 bootstrap)",
             "record_count": 4,  # sample only
-            "sha256": "manual-curation-pr1-" + _compute_sha256("dnr+grdata+ kent-2026-05")[:12],
+            "sha256": "N/A-manual-curation-pr1-" + _compute_sha256("dnr+grdata+ kent-2026-05")[:12],  # Issue 16: explicit N/A for hand-curated (no raw download artifacts in PR1)
             "notes": "Hand-curated from portal patterns + public park maps for 4 high-confidence shore sites. Full automation later.",
         },
         {
@@ -131,7 +140,7 @@ def build_manifest(sites: list[dict[str, Any]], geojson_text: str) -> dict[str, 
             "url": "https://grdata-grandrapids.opendata.arcgis.com/ + https://kentcountymi-accesskent.opendata.arcgis.com/",
             "downloaded": "2026-05-20",
             "record_count": 4,
-            "sha256": "manual-curation-pr1-" + _compute_sha256("grdata+kent-2026-05")[:12],
+            "sha256": "N/A-manual-curation-pr1-" + _compute_sha256("grdata+kent-2026-05")[:12],  # Issue 16: explicit N/A for hand-curated (no raw download artifacts in PR1)
         },
     ]
 
@@ -175,7 +184,7 @@ def main() -> None:
     fc = {
         "type": "FeatureCollection",
         "name": "fishmap_access_points_sample_pr1",
-        "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::4326"}},
+        # "crs" removed per RFC 7946 (Issue 13 fix); EPSG:4326 implicit + documented elsewhere
         "features": features,
     }
     geojson_text = json.dumps(fc, indent=2, ensure_ascii=False) + "\n"
