@@ -20,6 +20,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "data/processed/access_points_sample.geojson"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
