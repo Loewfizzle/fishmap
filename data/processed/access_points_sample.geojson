@@ -19,9 +19,10 @@
         "lon": -85.6721,
         "raw_type": "bank",
         "source_hint": "midnr + grdata",
-        "access_type": "bank",
-        "access_quality": "high",
-        "inferred": false,
+        "county": "Kent",
+        "access_type": "park_shore",
+        "access_quality": "medium-high",
+        "inferred": true,
         "needs_review": false,
         "parking": {
           "has": true,
@@ -88,9 +89,10 @@
         "lon": -85.7367,
         "raw_type": "bank",
         "source_hint": "kent + grdata",
-        "access_type": "bank",
-        "access_quality": "high",
-        "inferred": false,
+        "county": "Kent",
+        "access_type": "park_shore",
+        "access_quality": "medium-high",
+        "inferred": true,
         "needs_review": false,
         "parking": {
           "has": true,
@@ -160,6 +162,7 @@
         "lon": -85.6942,
         "raw_type": "pier",
         "source_hint": "grdata + city parks",
+        "county": "Kent",
         "access_type": "pier",
         "access_quality": "high",
         "inferred": false,
@@ -223,6 +226,7 @@
         "lon": -85.6122,
         "raw_type": "bank",
         "source_hint": "kent + experiencegr",
+        "county": "Kent",
         "access_type": "bank",
         "access_quality": "high",
         "inferred": false,
@@ -270,6 +274,406 @@
           {
             "name": "Experience Grand Rapids / DNR family-friendly fishing listings",
             "url": "https://www.experiencegr.com/things-to-do/outdoors-and-sports/fishing/",
+            "retrieved": "2026-05-20"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -86.228,
+          43.058
+        ]
+      },
+      "properties": {
+        "id": "ottawa-ghstate-005",
+        "name": "Grand Haven State Park Shore",
+        "waterbody": "Lake Michigan",
+        "lat": 43.058,
+        "lon": -86.228,
+        "raw_type": "bank",
+        "source_hint": "ottawa + midnr",
+        "county": "Ottawa",
+        "access_type": "park_shore",
+        "access_quality": "medium-high",
+        "inferred": true,
+        "needs_review": false,
+        "parking": {
+          "has": true,
+          "capacity": "200+",
+          "surface": "paved"
+        },
+        "facilities": [
+          "restroom",
+          "trash",
+          "showers",
+          "beach"
+        ],
+        "hours": "24h access (state park)",
+        "ada": "yes",
+        "species": [
+          "yellow perch",
+          "chinook salmon",
+          "coho",
+          "lake trout",
+          "brown trout"
+        ],
+        "regulations": {
+          "summary": "Lake Michigan special regs + salmon rules; check current DNR",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "Popular Lake Michigan shore fishing. Strong currents; wading caution advised. Ottawa County priority site.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Ottawa County GIS / Parks Open Data + Michigan DNR",
+            "url": "https://www.miottawa.org/ (GIS Hub search) + https://gis-midnr.opendata.arcgis.com/",
+            "retrieved": "2026-05-26"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -86.175,
+          43.012
+        ]
+      },
+      "properties": {
+        "id": "ottawa-pigeon-006",
+        "name": "Pigeon Creek County Park Shore Access",
+        "waterbody": "Pigeon Creek / Lake Michigan",
+        "lat": 43.012,
+        "lon": -86.175,
+        "raw_type": "park_shore",
+        "source_hint": "ottawa county parks",
+        "county": "Ottawa",
+        "access_type": "park_shore",
+        "access_quality": "medium-high",
+        "inferred": true,
+        "needs_review": false,
+        "parking": {
+          "has": true,
+          "capacity": "40+",
+          "surface": "gravel"
+        },
+        "facilities": [
+          "restroom",
+          "trails"
+        ],
+        "hours": "Dawn to dusk",
+        "ada": "partial",
+        "species": [
+          "smallmouth bass",
+          "northern pike",
+          "perch",
+          "bluegill"
+        ],
+        "regulations": {
+          "summary": "Standard warmwater + Lake MI tributary rules",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "County park with creek + Lake Michigan confluence access. Good wade fishing.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Ottawa County GIS / Parks Open Data + Michigan DNR",
+            "url": "https://www.miottawa.org/ (GIS Hub search) + https://gis-midnr.opendata.arcgis.com/",
+            "retrieved": "2026-05-26"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -86.205,
+          42.655
+        ]
+      },
+      "properties": {
+        "id": "allegan-saug-007",
+        "name": "Saugatuck Dunes / Harbor Shore",
+        "waterbody": "Kalamazoo River / Lake Michigan",
+        "lat": 42.655,
+        "lon": -86.205,
+        "raw_type": "bank",
+        "source_hint": "allegan + midnr",
+        "county": "Allegan",
+        "access_type": "bank",
+        "access_quality": "medium-high",
+        "inferred": true,
+        "needs_review": false,
+        "parking": {
+          "has": true,
+          "capacity": "30+",
+          "surface": "paved/gravel"
+        },
+        "facilities": [
+          "restroom",
+          "trails"
+        ],
+        "hours": "Park hours",
+        "ada": "partial",
+        "species": [
+          "chinook",
+          "coho",
+          "steelhead",
+          "yellow perch"
+        ],
+        "regulations": {
+          "summary": "Kalamazoo River / Lake MI mouth regs (trout/salmon emphasis)",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "Scenic Allegan County dune/shore access near Saugatuck. High day-trip value from GR.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Allegan County GIS / Parks + Saugatuck area public access data",
+            "url": "https://www.allegancounty.org/ (open data) + DNR portals",
+            "retrieved": "2026-05-26"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -86.215,
+          42.643
+        ]
+      },
+      "properties": {
+        "id": "allegan-douglas-008",
+        "name": "Douglas Beach Access (Kalamazoo River Mouth)",
+        "waterbody": "Kalamazoo River",
+        "lat": 42.643,
+        "lon": -86.215,
+        "raw_type": "bank",
+        "source_hint": "allegan county",
+        "county": "Allegan",
+        "access_type": "bank",
+        "access_quality": "medium-high",
+        "inferred": true,
+        "needs_review": false,
+        "parking": {
+          "has": true,
+          "capacity": "20+"
+        },
+        "facilities": [
+          "none noted"
+        ],
+        "hours": "Public access",
+        "ada": "no",
+        "species": [
+          "smallmouth bass",
+          "northern pike",
+          "walleye"
+        ],
+        "regulations": {
+          "summary": "River mouth standard regs; Eat Safe Fish advisory for Kalamazoo",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "Natural river mouth shore access in Allegan. Informal but public; verify boundaries.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Allegan County GIS / Parks + Saugatuck area public access data",
+            "url": "https://www.allegancounty.org/ (open data) + DNR portals",
+            "retrieved": "2026-05-26"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -86.195,
+          43.085
+        ]
+      },
+      "properties": {
+        "id": "ottawa-ruralend-009",
+        "name": "Lakeshore Road End Access (informal)",
+        "waterbody": "Lake Michigan (Ottawa outer)",
+        "lat": 43.085,
+        "lon": -86.195,
+        "raw_type": "road_end",
+        "source_hint": "ottawa local knowledge",
+        "county": "Ottawa",
+        "access_type": "road_end",
+        "access_quality": "medium",
+        "inferred": true,
+        "needs_review": true,
+        "parking": {
+          "has": false
+        },
+        "facilities": [],
+        "hours": "No posted restrictions (verify locally)",
+        "ada": "no",
+        "species": [
+          "perch",
+          "salmon (seasonal)"
+        ],
+        "regulations": {
+          "summary": "Standard Lake MI shore regs",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "Informal road-end access (flagged needs_review per DESIGN road-end heuristic). Use caution; private land nearby.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Ottawa County GIS / Parks Open Data + Michigan DNR",
+            "url": "https://www.miottawa.org/ (GIS Hub search) + https://gis-midnr.opendata.arcgis.com/",
+            "retrieved": "2026-05-26"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.492,
+          42.954
+        ]
+      },
+      "properties": {
+        "id": "kent-ada-010",
+        "name": "Ada Township Park River Shore",
+        "waterbody": "Grand River (east)",
+        "lat": 42.954,
+        "lon": -85.492,
+        "raw_type": "park_shore",
+        "source_hint": "kent + township",
+        "county": "Kent",
+        "access_type": "park_shore",
+        "access_quality": "medium-high",
+        "inferred": true,
+        "needs_review": false,
+        "parking": {
+          "has": true,
+          "capacity": "25+",
+          "surface": "gravel"
+        },
+        "facilities": [
+          "trails"
+        ],
+        "hours": "Dawn to dusk",
+        "ada": "partial",
+        "species": [
+          "smallmouth bass",
+          "channel catfish",
+          "carp"
+        ],
+        "regulations": {
+          "summary": "Upper Grand River warmwater regs",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "Township park river shore. Good eastern coverage in 40-mile radius.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
             "retrieved": "2026-05-20"
           }
         ],

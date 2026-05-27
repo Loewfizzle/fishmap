@@ -1,6 +1,6 @@
 # Fishmap ETL Specification (PR 1 Draft)
 
-**Status**: PR 1 bootstrap — contracts and schema for the sample pipeline. Full automation + spatial heuristics expanded in PR 6.
+**Status**: PR 6 — full 40-mile expanded dataset (Ottawa/Allegan) + complete classify/infer heuristics per DESIGN. (PR 1 bootstrap contracts remain foundation.)
 
 See DESIGN.md sections:
 - "Data Acquisition Reality & Implementation Notes"

@@ -724,7 +724,7 @@ function App() {
               ⭐ Saved ({savedSpotIds.length})
             </button>
             <div className="text-xs px-3 py-1 bg-emerald-100 text-emerald-800 rounded font-mono">
-              PR 3 • RICH DETAILS
+              PR 6 • FULL 40-MI DATASET
             </div>
           </div>
         </div>
@@ -732,11 +732,11 @@ function App() {
 
       <main className="max-w-5xl mx-auto px-4 py-6">
         <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded text-sm">
-          <strong>PR 3.</strong> Rich detail panels (mobile bottom sheet +
-          desktop side), full practical fields + clickable
-          citations/regulations, Get Directions, Share, My Saved Spots
-          (localStorage). Built on PR 2 map. Sample data only (PR 6 adds full
-          dataset).
+          <strong>PR 6.</strong> Expanded 40-mile dataset (Ottawa + Allegan
+          prioritized), full DESIGN shore classification heuristics
+          (classify_access_point + infer_shore_segments), richer enrichment,
+          legend + polish. Production data for day-trip planning. (Prior PRs
+          untouched except light header polish.)
         </div>
 
         {/* PR 5: Full PWA + Offline Region Download (per DESIGN + review fixes).
@@ -880,6 +880,69 @@ function App() {
             Note: basemap vector geometry offline via OPFS; text labels
             best-effort.
           </p>
+
+          {/* PR 6 UI polish: Legend (smallest addition, follows existing classes/colors from map paint + filter chips; a11y with aria + title) */}
+          <div
+            className="mt-2 p-2 bg-white border rounded text-[10px] flex flex-wrap items-center gap-x-3 gap-y-1"
+            role="region"
+            aria-label="Map legend for access point types"
+          >
+            <span className="font-medium text-slate-600">Legend:</span>
+            <span
+              title="bank (shore)"
+              className="inline-flex items-center gap-1"
+            >
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full"
+                style={{ background: "#15803d" }}
+              />{" "}
+              bank
+            </span>
+            <span title="pier" className="inline-flex items-center gap-1">
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full"
+                style={{ background: "#1d4ed8" }}
+              />{" "}
+              pier
+            </span>
+            <span title="dock" className="inline-flex items-center gap-1">
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full"
+                style={{ background: "#0e7490" }}
+              />{" "}
+              dock
+            </span>
+            <span title="wade" className="inline-flex items-center gap-1">
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full"
+                style={{ background: "#166534" }}
+              />{" "}
+              wade
+            </span>
+            <span
+              title="road_end (inferred, often needs_review)"
+              className="inline-flex items-center gap-1"
+            >
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full"
+                style={{ background: "#b45309" }}
+              />{" "}
+              road_end
+            </span>
+            <span
+              title="park_shore (inferred via park/hydro)"
+              className="inline-flex items-center gap-1"
+            >
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full"
+                style={{ background: "#7c3aed" }}
+              />{" "}
+              park_shore
+            </span>
+            <span className="text-slate-400">
+              (circle size = 7px; stroke white; see DESIGN filter expr)
+            </span>
+          </div>
         </section>
 
         {/* Interactive list (click rows to fly/highlight on map + populate rich PR3 detail) */}

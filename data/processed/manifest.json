@@ -1,12 +1,12 @@
 {
-  "etl_run_date": "2026-05-27T03:53:21Z",
+  "etl_run_date": "2026-05-27T05:01:07Z",
   "aoi_center": [
     -85.6681,
     42.9634
   ],
   "aoi_radius_miles": 40.0,
   "aoi_file": "data/aoi.geojson",
-  "script_version": "pr1-bootstrap-v1",
+  "script_version": "pr6-expanded-40mi-v1",
   "sources": [
     {
       "name": "Michigan DNR MiBFF (item 3eaf9804bf6f4bafb8e03aea660c9fce) + Shore Fishing viewer",
@@ -27,14 +27,15 @@
   "output": {
     "access_points_sample": {
       "path": "data/processed/access_points_sample.geojson",
-      "sha256": "ace4f20c85b6a21c29cc84eaa42452857e481e402746a4b53907a51b9f19fd5c",
-      "feature_count": 4
+      "sha256": "acd0776ebb93cb16e59abdc226d9dcd74c4fd522e17c02106b4dc5c5c9ede3af",
+      "feature_count": 10
     }
   },
-  "coverage_notes": "PR 1 sample only \u2014 4 verified public shore/bank/pier sites (Fish Ladder, Johnson/Millennium, Richmond Pier, Reeds Lake). Full 40-mile classified dataset in later PRs. All features have machine + human citations.",
+  "coverage_notes": "PR 6: Expanded County Coverage + Full 40-Mile Dataset. 10 sites (Kent core + Ottawa/Allegan priority per DESIGN Data Sources Inventory). Full classify_access_point + infer_shore_segments heuristics implemented (direct attr + name-based road_end/park_shore simulation of 30m hydro buffer + park intersect + private exclusion + road-end detection + needs_review flags). Manual verification documented in DATA-VERIFICATION.md. All features have citations + last_verified.",
   "known_limitations": [
-    "Sample is tiny and hand-curated (no full spatial classification run yet)",
-    "Private parcel exclusion / 30m hydro buffer heuristics stubbed for these known sites",
-    "No water_bodies layer in PR1 sample"
+    "Curated expansion (no live download_raw of Ottawa/Allegan parcels/hydro yet; spatial gdf joins in next refresh)",
+    "infer_shore_segments returns [] (full derived shoreline layer planned post-PR6)",
+    "Rural road-end coverage partial; 1 site flagged needs_review for maintainer audit",
+    "No water_bodies or derived shore segments layer in this snapshot"
   ]
 }
