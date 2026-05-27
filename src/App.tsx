@@ -36,7 +36,8 @@ function App() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [shoreOnly, setShoreOnly] = useState(true);
-  const [activeTypes, setActiveTypes] = useState<string[]>(["bank", "pier"]);
+  // Initialize to full SHORE_TYPES (single source of truth per DESIGN literal); empty means "all" (decouples from shoreOnly)
+  const [activeTypes, setActiveTypes] = useState<string[]>([...SHORE_TYPES]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
@@ -52,11 +53,24 @@ function App() {
     [allFeatures],
   );
 
+  // Centralized distances when "Near me" active (avoids 3x recompute on renders; Issue 5)
+  const siteDistances = useMemo(() => {
+    if (!userLocation) return new Map<string, number>();
+    const m = new Map<string, number>();
+    allFeatures.forEach((f: any) => {
+      const id = f.properties.id as string;
+      const coords = f.geometry.coordinates as [number, number];
+      m.set(id, distance(userLocation, coords, { units: "miles" }));
+    });
+    return m;
+  }, [userLocation, allFeatures]);
+
   // Client-side filtered + optionally distance-sorted list (search + chips + shore toggle)
   const filteredSites = useMemo(() => {
     let result = allSites.filter((site: AccessSite) => {
       if (shoreOnly && !SHORE_TYPES.includes(site.access_type as any))
         return false;
+      // length===0 means "all types" (decoupled from Shore & Dock Only for Issue 1/4)
       if (activeTypes.length > 0 && !activeTypes.includes(site.access_type))
         return false;
       if (searchTerm.trim()) {
@@ -69,12 +83,8 @@ function App() {
 
     if (sortedByDistance && userLocation) {
       result = [...result].sort((a, b) => {
-        const fa: any = allFeatures.find((f: any) => f.properties.id === a.id);
-        const fb: any = allFeatures.find((f: any) => f.properties.id === b.id);
-        const ca = fa.geometry.coordinates as [number, number];
-        const cb = fb.geometry.coordinates as [number, number];
-        const da = distance(userLocation, ca, { units: "miles" });
-        const db = distance(userLocation, cb, { units: "miles" });
+        const da = siteDistances.get(a.id) ?? Infinity;
+        const db = siteDistances.get(b.id) ?? Infinity;
         return da - db;
       });
     }
@@ -95,6 +105,7 @@ function App() {
     if (shoreOnly) {
       expr = ["in", ["get", "access_type"], ["literal", [...SHORE_TYPES]]];
     }
+    // length===0 means no type restriction (chips can be cleared; shoreOnly still applies independently)
     if (activeTypes.length > 0) {
       const tExpr = ["in", ["get", "access_type"], ["literal", activeTypes]];
       expr = ["all", expr, tExpr];
@@ -192,6 +203,16 @@ function App() {
     applyFiltersToMap();
   }, [shoreOnly, activeTypes]);
 
+  // Auto-clear selection if it falls outside current filtered set (prevents desync + hidden panel; Issue 3)
+  useEffect(() => {
+    if (
+      selectedId &&
+      !filteredSites.some((s: AccessSite) => s.id === selectedId)
+    ) {
+      clearSelection();
+    }
+  }, [filteredSites, selectedId]);
+
   // Fly map + popup when selecting from list (provides the "highlight on map")
   const flyToAndSelect = (id: string) => {
     const m = mapRef.current;
@@ -220,6 +241,7 @@ function App() {
   const clearSelection = () => setSelectedId(null);
 
   // "Near me": browser geolocation + @turf/distance sort + map highlight of nearest
+  // Now respects current shoreOnly / activeTypes / search (snapshot at click time; Issue 2)
   const handleNearMe = () => {
     if (!("geolocation" in navigator)) {
       setGeoError("Geolocation not supported");
@@ -227,6 +249,12 @@ function App() {
     }
     setIsLocating(true);
     setGeoError(null);
+
+    // Snapshot filter state *at click time* so async callback uses consistent view
+    const snapSearch = searchTerm;
+    const snapShore = shoreOnly;
+    const snapActive = [...activeTypes];
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const user: [number, number] = [
@@ -236,33 +264,55 @@ function App() {
         setUserLocation(user);
         setSortedByDistance(true);
 
-        // Compute nearest using turf on the real sample coords
+        // Build candidates that match the *current UI filters* (excluding distance sort)
+        const candidates: any[] = allFeatures.filter((f: any) => {
+          const p = f.properties;
+          if (snapShore && !SHORE_TYPES.includes(p.access_type)) return false;
+          if (snapActive.length > 0 && !snapActive.includes(p.access_type))
+            return false;
+          if (snapSearch.trim()) {
+            const q = snapSearch.toLowerCase().trim();
+            const hay = (p.name + " " + p.waterbody).toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          return true;
+        });
+
+        if (candidates.length === 0) {
+          setGeoError("No matching sites for current filters");
+          setIsLocating(false);
+          return;
+        }
+
+        // Nearest *only among candidates* (respects filters/search)
         let nearestId: string | null = null;
         let minD = Infinity;
-        allFeatures.forEach((f: any) => {
+        let nearestFeat: any = null;
+        candidates.forEach((f: any) => {
           const coords = f.geometry.coordinates as [number, number];
           const d = distance(user, coords, { units: "miles" });
           if (d < minD) {
             minD = d;
             nearestId = f.properties.id;
+            nearestFeat = f;
           }
         });
 
-        if (nearestId) {
+        if (nearestId && nearestFeat) {
           setSelectedId(nearestId);
-          const feat: any = allFeatures.find(
-            (f: any) => f.properties.id === nearestId,
-          );
           const m = mapRef.current;
-          if (m && feat) {
-            const [lon, lat] = feat.geometry.coordinates as [number, number];
+          if (m) {
+            const [lon, lat] = nearestFeat.geometry.coordinates as [
+              number,
+              number,
+            ];
             m.flyTo({ center: [lon, lat], zoom: 13, duration: 700 });
             setTimeout(() => {
               if (mapRef.current) {
                 new maplibregl.Popup()
                   .setLngLat([lon, lat])
                   .setHTML(
-                    `<strong>Nearest to you:</strong> ${feat.properties.name}<br/>~${minD.toFixed(1)} miles`,
+                    `<strong>Nearest to you (matches filters):</strong> ${nearestFeat.properties.name}<br/>~${minD.toFixed(1)} miles`,
                   )
                   .addTo(mapRef.current);
               }
@@ -286,11 +336,12 @@ function App() {
   };
 
   // Access type chips (toggle multi-select; affects both list + MapLibre layer)
+  // Empty activeTypes now means "show all" (decouples Shore & Dock Only; addresses Issue 1/4)
   const toggleType = (t: string) => {
     setActiveTypes((prev) => {
       if (prev.includes(t)) {
         const next = prev.filter((x) => x !== t);
-        return next.length ? next : prev;
+        return next; // allow empty = all types (subject to shoreOnly)
       }
       return [...prev, t];
     });
@@ -348,7 +399,7 @@ function App() {
               Clear dist sort
             </button>
           )}
-          <label className="inline-flex items-center gap-1.5 text-sm cursor-pointer select-none">
+          <label className="inline-flex items-center gap-1.5 text-sm font-medium cursor-pointer select-none px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200">
             <input
               type="checkbox"
               checked={shoreOnly}
@@ -359,10 +410,10 @@ function App() {
           {geoError && <span className="text-xs text-red-600">{geoError}</span>}
         </div>
 
-        {/* access_type chips (follow DESIGN visual + filter behavior) */}
+        {/* access_type chips (driven by SHORE_TYPES for fidelity to DESIGN literal + Issue 1/4) */}
         <div className="mb-4 flex flex-wrap items-center gap-1.5 text-xs">
           <span className="text-slate-500">Filter types:</span>
-          {["bank", "pier"].map((t) => (
+          {SHORE_TYPES.map((t) => (
             <button
               key={t}
               onClick={() => toggleType(t)}
@@ -372,7 +423,7 @@ function App() {
             </button>
           ))}
           <span className="text-[10px] text-slate-400">
-            (combined with Shore toggle; updates map + list live)
+            (click to toggle; empty = all. Combined with Shore &amp; Dock Only)
           </span>
         </div>
 
@@ -386,12 +437,13 @@ function App() {
           </div>
           <div ref={mapContainer} className="map-container bg-slate-200" />
           <p className="text-[10px] text-slate-500 mt-1">
-            Layer filter:{" "}
+            Base layer filter (DESIGN.md):{" "}
             <code>
               ['in', ['get', 'access_type'], ['literal',
               ['bank','dock','pier','wade','road_end','park_shore']]]
             </code>{" "}
-            (exact from DESIGN)
+            (runtime may wrap with "all" for chips; shoreOnly uses this
+            literally)
           </p>
         </section>
 
@@ -459,7 +511,9 @@ function App() {
               Access Points ({filteredSites.length}
               {sortedByDistance ? ", nearest first" : ""})
             </h2>
-            {(searchTerm || !shoreOnly || activeTypes.length < 2) && (
+            {(searchTerm ||
+              !shoreOnly ||
+              activeTypes.length < SHORE_TYPES.length) && (
               <span className="text-xs text-emerald-700">filtered</span>
             )}
           </div>
@@ -474,15 +528,8 @@ function App() {
               const isSel = site.id === selectedId;
               let distBadge = "";
               if (sortedByDistance && userLocation) {
-                const fa: any = allFeatures.find(
-                  (f: any) => f.properties.id === site.id,
-                );
-                const d = distance(
-                  userLocation,
-                  fa.geometry.coordinates as [number, number],
-                  { units: "miles" },
-                );
-                distBadge = ` • ${d.toFixed(1)} mi`;
+                const d = siteDistances.get(site.id);
+                if (d != null) distBadge = ` • ${d.toFixed(1)} mi`;
               }
               return (
                 <div
