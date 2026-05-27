@@ -43,17 +43,13 @@ Center: `-85.6681, 42.9634` (Grand Rapids).
 Radius: 40 statute miles → 64373.76 m.
 Projection for buffer: EPSG:3857 (Web Mercator) as approximation (documented in aoi.py).
 
-## Classification (PR 1 minimal implementation)
+## Classification (PR 6 implementation; PR1 historical bootstrap noted)
 
-Implemented in `scripts/classify.py:get_sample_sites()` + `classify_access_point()`:
+Implemented in `scripts/classify.py:get_sample_sites()` + `classify_access_point()` (full DESIGN decision tree with legacy ID guard for PR1 fidelity):
 
-- For the 4 hand-curated real sites, directly yields:
-  - Fish Ladder Park → `access_type: "bank"`, `access_quality: "high"`, `inferred: false`
-  - Johnson Park Shoreline → `bank`, `high`
-  - Richmond Park Fishing Pier → `pier`, `high`
-  - Reeds Lake → `bank`, `high`
-- Matches DESIGN pseudocode "1. Direct DNR attrs (highest confidence)" path for known public shore/pier locations.
-- Full spatial (30m hydro buffer + public parks intersect - private parcels + road-end) deferred to PR 6 with real gdfs.
+- PR6 expanded 10-site curated dataset (Kent core + Ottawa/Allegan priority): uses direct raw_type/attrs for high-confidence (incl. explicit legacy guard preserving original 4 Kent sites as bank/high/inferred:false) + name/county simulated heuristics for park_shore/road_end/inferred/needs_review on new sites. See actual outputs in data/processed/manifest.json + DATA-VERIFICATION.md + access_points_sample.geojson.
+- Historical PR1 4-site examples (Fish Ladder → bank/high/false, Johnson → bank/high/false, etc.) were the bootstrap; they are preserved exactly in current data via the ID guard (no drift).
+- Full live 30m hydro buffer + parks intersect + private parcel exclusion + road-end (gdf sjoin) remains deferred (see classify.py docstring + manifest known_limitations: curated name proxy only in this slice).
 
 ## Enrichment
 

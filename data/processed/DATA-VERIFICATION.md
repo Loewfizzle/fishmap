@@ -1,8 +1,10 @@
-# Data Verification Notes — PR 1 Sample
+# Data Verification Notes — PR 1 Sample (Historical bootstrap state)
+
+**Note (PR6 reconciliation)**: This section preserves the original PR1 curation text and expectations for audit trail. In the actual PR6 generated data (after classify.py legacy guard fix), the two "Park"-named Kent sites (Fish Ladder, Johnson) retain their intended high-confidence `bank`/`high`/`inferred:false` (see current geojson + PR6 section below). The original text below is therefore historical only; current attrs for the 4 are listed in the PR6 update.
 
 **Date of curation**: 2026-05 (for bootstrap PR)
 **ETL run that produced these files**: See manifest.json `etl_run_date`
-**Scope**: 4 real, hand-curated public shore / pier access points inside the 40-mile AOI. All have full citations and `last_verified`.
+**Scope (historical)**: 4 real, hand-curated public shore / pier access points inside the 40-mile AOI. All have full citations and `last_verified`.
 
 ## Sites included (with verification basis)
 
@@ -52,6 +54,8 @@
 Future data PRs will add screenshots of portal exports + explicit override lists in this file.
 
 **This sample establishes the citation + provenance standard for the entire project.**
+
+**PR6 classification reconciliation (Issue 3)**: The two original Kent sites containing "Park" in name (gr-fishladder-001 Fish Ladder, kent-johnson-002 Johnson) are now correctly `bank`/`high`/`inferred:false` thanks to explicit legacy ID guard in classify.py (prevents unintended "park" substring + county heuristic drift). Richmond Pier and Reeds Lake were unaffected. See PR6 section + current geojson/manifest for exact attrs. The PR1 section text above is retained verbatim as historical record only.
 
 ---
 

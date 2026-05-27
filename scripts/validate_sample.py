@@ -46,7 +46,7 @@ def main(lint_only: bool = False) -> int:
 
     features = fc.get("features", [])
     if len(features) < 3:
-        errors.append(f"Expected 3-5 sample features, got {len(features)}")
+        errors.append(f"Expected ≥3 features (sample may grow in later PRs, e.g. PR6 10-site), got {len(features)}")  # Issue 8 fix: relax outdated 3-5 expectation
 
     for i, feat in enumerate(features):
         errs = validate_feature(feat)

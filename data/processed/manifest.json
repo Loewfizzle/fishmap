@@ -1,5 +1,5 @@
 {
-  "etl_run_date": "2026-05-27T05:01:07Z",
+  "etl_run_date": "2026-05-27T05:08:15Z",
   "aoi_center": [
     -85.6681,
     42.9634
@@ -11,23 +11,40 @@
     {
       "name": "Michigan DNR MiBFF (item 3eaf9804bf6f4bafb8e03aea660c9fce) + Shore Fishing viewer",
       "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
-      "downloaded": "2026-05-20 (manual verified extract for PR1 bootstrap)",
+      "downloaded": "2026-05-20 (manual verified extract for PR1 bootstrap; PR6 re-use)",
       "record_count": 4,
-      "sha256": "N/A-manual-curation-pr1-772cb425472a",
-      "notes": "Hand-curated from portal patterns + public park maps for 4 high-confidence shore sites. Full automation later."
+      "sha256": "N/A-manual-curation-pr6-a70ea0b8859f",
+      "notes": "Hand-curated high-confidence Kent core (4 sites). PR6 expansion adds Ottawa/Allegan curated sites (see additional entries + per-feature sources)."
     },
     {
       "name": "City of Grand Rapids GRData + Kent County GIS",
       "url": "https://grdata-grandrapids.opendata.arcgis.com/ + https://kentcountymi-accesskent.opendata.arcgis.com/",
-      "downloaded": "2026-05-20",
+      "downloaded": "2026-05-20 (PR6: core + Ada coverage)",
       "record_count": 4,
-      "sha256": "N/A-manual-curation-pr1-240f8a5e07b8"
+      "sha256": "N/A-manual-curation-pr6-9fed333e40a5",
+      "notes": "Kent + GR core curation (PR1 4 + Ada eastern coverage in PR6 10-site set)."
+    },
+    {
+      "name": "Ottawa County GIS / Parks Open Data (curated PR6 expansion)",
+      "url": "https://www.miottawa.org/ (GIS Hub) + https://gis-midnr.opendata.arcgis.com/",
+      "downloaded": "2026-05-26 (PR6 curated expansion for Ottawa priority sites)",
+      "record_count": 3,
+      "sha256": "N/A-manual-curation-pr6-ottawa-9aeaec212619",
+      "notes": "Curated Ottawa County priority sites (Grand Haven State Park shore, Pigeon Creek, rural road-end). Part of PR6 10-site 40-mile deliverable. No live downloads."
+    },
+    {
+      "name": "Allegan County GIS / Parks (curated PR6 expansion)",
+      "url": "https://www.allegancounty.org/ (open data) + DNR portals",
+      "downloaded": "2026-05-26 (PR6 curated expansion for Allegan priority sites)",
+      "record_count": 3,
+      "sha256": "N/A-manual-curation-pr6-allegan-e75f373b169d",
+      "notes": "Curated Allegan County priority sites (Saugatuck Dunes/harbor, Douglas river mouth). Part of PR6 10-site 40-mile deliverable. No live downloads."
     }
   ],
   "output": {
     "access_points_sample": {
       "path": "data/processed/access_points_sample.geojson",
-      "sha256": "acd0776ebb93cb16e59abdc226d9dcd74c4fd522e17c02106b4dc5c5c9ede3af",
+      "sha256": "f305114abf119c0f6bab39bddff6f08626382f0d99d61abecfc11b500ed85727",
       "feature_count": 10
     }
   },

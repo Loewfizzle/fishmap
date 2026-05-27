@@ -119,28 +119,51 @@ def build_manifest(sites: list[dict[str, Any]], geojson_text: str) -> dict[str, 
     # Provenance for the generated outputs (content hash of the geojson we emit)
     output_sha = _compute_sha256(geojson_text)
 
-    # Sources in manifest record the origin of the *sample curation*
+    # Sources in manifest record the origin of the *sample curation* (PR6: expanded to 10 sites)
+    # Top-level provenance now reflects all contributing counties per DESIGN (Issue 2/7 fix).
+    # Per-feature sources[] (in enrich) already include the richer Ottawa/Allegan citations.
+    core_kent_count = 4  # original high-confidence PR1 sites
+    new_count = len(sites) - core_kent_count
     source_entries = [
         {
             "name": "Michigan DNR MiBFF (item 3eaf9804bf6f4bafb8e03aea660c9fce) + Shore Fishing viewer",
             "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
-            "downloaded": "2026-05-20 (manual verified extract for PR1 bootstrap)",
-            "record_count": 4,  # sample only
-            "sha256": "N/A-manual-curation-pr1-"
-            + _compute_sha256("dnr+grdata+ kent-2026-05")[
+            "downloaded": "2026-05-20 (manual verified extract for PR1 bootstrap; PR6 re-use)",
+            "record_count": core_kent_count,
+            "sha256": "N/A-manual-curation-pr6-"
+            + _compute_sha256("dnr+grdata+kent-pr6-2026-05")[
                 :12
-            ],  # Issue 16: explicit N/A for hand-curated (no raw download artifacts in PR1)
-            "notes": "Hand-curated from portal patterns + public park maps for 4 high-confidence shore sites. Full automation later.",
+            ],
+            "notes": "Hand-curated high-confidence Kent core (4 sites). PR6 expansion adds Ottawa/Allegan curated sites (see additional entries + per-feature sources).",
         },
         {
             "name": "City of Grand Rapids GRData + Kent County GIS",
             "url": "https://grdata-grandrapids.opendata.arcgis.com/ + https://kentcountymi-accesskent.opendata.arcgis.com/",
-            "downloaded": "2026-05-20",
-            "record_count": 4,
-            "sha256": "N/A-manual-curation-pr1-"
-            + _compute_sha256("grdata+kent-2026-05")[
+            "downloaded": "2026-05-20 (PR6: core + Ada coverage)",
+            "record_count": core_kent_count,
+            "sha256": "N/A-manual-curation-pr6-"
+            + _compute_sha256("grdata+kent-pr6-2026-05")[
                 :12
-            ],  # Issue 16: explicit N/A for hand-curated (no raw download artifacts in PR1)
+            ],
+            "notes": "Kent + GR core curation (PR1 4 + Ada eastern coverage in PR6 10-site set).",
+        },
+        {
+            "name": "Ottawa County GIS / Parks Open Data (curated PR6 expansion)",
+            "url": "https://www.miottawa.org/ (GIS Hub) + https://gis-midnr.opendata.arcgis.com/",
+            "downloaded": "2026-05-26 (PR6 curated expansion for Ottawa priority sites)",
+            "record_count": 3,  # ghstate, pigeon, ruralend
+            "sha256": "N/A-manual-curation-pr6-ottawa-"
+            + _compute_sha256("ottawa-pr6-2026-05")[:12],
+            "notes": "Curated Ottawa County priority sites (Grand Haven State Park shore, Pigeon Creek, rural road-end). Part of PR6 10-site 40-mile deliverable. No live downloads.",
+        },
+        {
+            "name": "Allegan County GIS / Parks (curated PR6 expansion)",
+            "url": "https://www.allegancounty.org/ (open data) + DNR portals",
+            "downloaded": "2026-05-26 (PR6 curated expansion for Allegan priority sites)",
+            "record_count": 3,  # saug, douglas
+            "sha256": "N/A-manual-curation-pr6-allegan-"
+            + _compute_sha256("allegan-pr6-2026-05")[:12],
+            "notes": "Curated Allegan County priority sites (Saugatuck Dunes/harbor, Douglas river mouth). Part of PR6 10-site 40-mile deliverable. No live downloads.",
         },
     ]
 
@@ -186,7 +209,7 @@ def main() -> None:
     features = [_build_feature(s) for s in enriched]
     fc = {
         "type": "FeatureCollection",
-        "name": "fishmap_access_points_sample_pr1",
+        "name": "fishmap_access_points_pr6_expanded_40mi",  # Issue 6 fix: reflect PR6 10-site expansion (RFC 7946 name optional but now accurate)
         # "crs" removed per RFC 7946 (Issue 13 fix); EPSG:4326 implicit + documented elsewhere
         "features": features,
     }

@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "name": "fishmap_access_points_sample_pr1",
+  "name": "fishmap_access_points_pr6_expanded_40mi",
   "features": [
     {
       "type": "Feature",
@@ -20,9 +20,9 @@
         "raw_type": "bank",
         "source_hint": "midnr + grdata",
         "county": "Kent",
-        "access_type": "park_shore",
-        "access_quality": "medium-high",
-        "inferred": true,
+        "access_type": "bank",
+        "access_quality": "high",
+        "inferred": false,
         "needs_review": false,
         "parking": {
           "has": true,
@@ -90,9 +90,9 @@
         "raw_type": "bank",
         "source_hint": "kent + grdata",
         "county": "Kent",
-        "access_type": "park_shore",
-        "access_quality": "medium-high",
-        "inferred": true,
+        "access_type": "bank",
+        "access_quality": "high",
+        "inferred": false,
         "needs_review": false,
         "parking": {
           "has": true,
