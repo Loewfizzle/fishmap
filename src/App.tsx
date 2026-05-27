@@ -1297,7 +1297,7 @@ function App() {
               <div className="mt-3 text-[10px] text-slate-400 border-t pt-2">
                 Stored locally in your browser only. Clear site data to reset.
               </div>
-              <div className="disclaimer mt-2 text-[10px]">
+              <div className="disclaimer mt-2 text-xs">
                 <strong>Disclaimer:</strong> {DATA_DISCLAIMER}
               </div>
             </div>
@@ -1310,11 +1310,8 @@ function App() {
             DESIGN.md
           </a>
           , <code>data/processed/manifest.json</code>,{" "}
-          <code>DATA-VERIFICATION.md</code>. <strong>Disclaimer:</strong> Data
-          is compiled from public sources. Always verify current conditions,
-          property boundaries, and regulations on site. Fishmap does not grant
-          legal access. This is not legal advice.{" "}
-          <span className="font-mono">npm run dev</span> prototype.
+          <code>DATA-VERIFICATION.md</code>. <strong>Disclaimer:</strong>{" "}
+          {DATA_DISCLAIMER}
         </footer>
       </main>
     </div>

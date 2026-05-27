@@ -62,7 +62,7 @@ make tiles-sample   # optional small PMTiles smoke
 ```
 
 - This produces `data/processed/access_points_sample.geojson` + `manifest.json` (update in place for the PR).
-- For full quarterly (non-sample): the scripts support expansion; update `etl_sample.py` entrypoint or add `make update-data` target in future if needed. Current is the 10-site curated baseline.
+- For full quarterly (non-sample): the scripts support expansion; update `etl_sample.py` entrypoint or (future: consider adding `make update-data` wrapper target) if needed. Current is the 10-site curated baseline.
 
 **Dry-run mode**: Run the above locally; do not commit until verification (see below). The GitHub Action (etl-dry-run.yml) automates this on dispatch + manifest diff.
 
@@ -77,14 +77,16 @@ make tiles-sample   # optional small PMTiles smoke
 - [ ] Before/after feature count + diff stats in PR description
 - [ ] For inferred points (`inferred: true`): document the heuristic path (park/hydro buffer etc.)
 - [ ] One maintainer + optional external spot-check (photos or portal links)
-- [ ] Update CHANGELOG.md (or CHANGELOG-data.md per DESIGN) with summary
+- [ ] Update CHANGELOG.md (the file created/used in PR 7; DESIGN mentioned a potential separate CHANGELOG-data.md in earlier drafts) with summary
 - [ ] If tiles change: upload new .pmtiles to R2 (per ASSET-HOSTING.md), update URLs + manifest
+- [ ] If R2 hostname changes: also update vercel.json connect-src (and re-verify CSP headers per LAUNCH-CHECKLIST.md)
 - [ ] PR title: "[DATA] Quarterly refresh YYYY-QX — X sites / Y changes"
 
 ## 4. Post-ETL: PMTiles + Hosting
 - Run tippecanoe via `scripts/tile.py` (or make) for thematic layer.
 - Upload to production R2 bucket (see ASSET-HOSTING.md for CORS + naming).
 - Update `src/App.tsx` PMTiles URLs only if changing hosts (coordinate with Vercel deploy).
+- If R2 host changes: update vercel.json CSP connect-src allowlist + re-test headers (see LAUNCH-CHECKLIST.md gate and ASSET-HOSTING.md integration note). This addresses production CSP/R2 breakage risk.
 - Test Range requests + CORS from browser devtools + `curl -I -H "Range: ..."`
 
 ## 5. Draft Data PR Scaffolding

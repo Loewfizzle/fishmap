@@ -1,5 +1,7 @@
 # Contributing to Fishmap
 
+**Default branch**: `master` (all references in docs/workflows use this; confirmed via `git show-ref --heads`).
+
 Thank you for helping build a trustworthy shore-fishing map for the Grand Rapids region.
 
 ## Code of Conduct
@@ -10,7 +12,7 @@ Be respectful. This project prioritizes data accuracy, citations, and legal clar
 
 ### Small fixes / docs / code
 
-1. Fork + branch from `main`.
+1. Fork + branch from `master`.
 2. Follow existing patterns (see DESIGN.md "Key Decisions").
 3. Run `make lint` / `make fmt` (or ruff/black + prettier) before PR.
 4. PR description must reference which section of DESIGN.md it implements.

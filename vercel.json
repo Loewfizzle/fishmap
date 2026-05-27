@@ -10,7 +10,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.protomaps.com https://build.protomaps.com https://cdn.protomaps.com https://www.google.com; font-src 'self' https://cdn.protomaps.com; frame-src https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.protomaps.com https://build.protomaps.com https://cdn.protomaps.com https://*.r2.cloudflarestorage.com https://*.cloudflarestorage.com https://www.google.com; connect-src 'self' https://*.protomaps.com https://build.protomaps.com https://cdn.protomaps.com https://www.google.com https://*.r2.cloudflarestorage.com https://*.cloudflarestorage.com; font-src 'self' https://cdn.protomaps.com; frame-src https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self';"
         },
         {
           "key": "X-Content-Type-Options",

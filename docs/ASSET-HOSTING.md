@@ -135,7 +135,7 @@ Use the exact policy from the original decision (repeated for PR7 maintainers):
 - Update `src/App.tsx` PMTiles URLs (protomaps + custom layers) to the R2 HTTPS endpoints only on the production branch / after first upload in a data PR.
 - Vercel (app host) does not host PMTiles; R2 + CORS is required for browser Range requests from the map (pmtiles protocol + maplibre).
 
-**Integration with vercel.json (PR7)**: The app CSP (see `vercel.json`) explicitly allows `connect-src` to the R2 domain (add your R2 public hostname to the connect-src list on first real tile deploy if using a custom domain).
+**Integration with vercel.json (PR7)**: The app CSP (see `vercel.json`) explicitly allows `connect-src` to the R2 domain (add your R2 public hostname to the connect-src list on first real tile deploy if using a custom domain). See the dedicated pre-launch checkbox in docs/LAUNCH-CHECKLIST.md ("vercel.json CSP updated with R2...") + securityheaders verification gate. This prevents the production tile breakage described in review Issue 1.
 
 **Rollback / versioned assets**: Use dated paths (e.g. `/pmtiles/2026-Q2/...`) in the manifest. Old objects retained for 90 days via lifecycle rule (cheap).
 

@@ -15,8 +15,7 @@ jobs:
   etl-dry-run:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      issues: write  # for future comment scaffolding if needed
+      contents: read  # least-privilege: workflow only produces artifacts + step summary (no GitHub API calls to issues/PRs today)
     steps:
       - uses: actions/checkout@v4
 
@@ -42,18 +41,18 @@ jobs:
           make etl-validate
           echo "ETL dry-run complete. Outputs in data/processed/ (for diff only)."
 
-      - name: Compute manifest diff vs main (scaffolding artifact)
+      - name: Compute manifest diff vs master (scaffolding artifact)
         run: |
-          git fetch origin main --quiet || true
-          echo "## Manifest Diff (vs origin/main)" > /tmp/diff.md
+          git fetch origin master --quiet || true
+          echo "## Manifest Diff (vs origin/master)" > /tmp/diff.md
           echo '```diff' >> /tmp/diff.md
-          git diff origin/main -- data/processed/manifest.json >> /tmp/diff.md || echo "(no diff or first run)" >> /tmp/diff.md
+          git diff origin/master -- data/processed/manifest.json >> /tmp/diff.md || echo "(no diff or first run)" >> /tmp/diff.md
           echo '```' >> /tmp/diff.md
           cat /tmp/diff.md
 
       - name: Generate draft data PR scaffolding (copy-paste into PR body)
         run: |
-          cat > /tmp/pr-scaffold.md << 'PRBODY'
+          cat > /tmp/pr-scaffold.md << PRBODY
           ## [DATA] Quarterly refresh $(date +%Y-Q%q) — X sites changed
 
           **Dry-run trigger**: workflow_dispatch (notes: ${{ github.event.inputs.notes || 'manual' }})

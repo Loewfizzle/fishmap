@@ -8,6 +8,7 @@ Use this before any public posts. Tick items only when complete. Reference DESIG
 - [ ] `vercel.json` deployed + CSP headers verified (use https://securityheaders.com or curl -I)
 - [ ] Production R2 bucket created, CORS set exactly per docs/ASSET-HOSTING.md, Range requests tested (`curl -I -H "Range: bytes=0-1023" $URL`)
 - [ ] PMTiles URLs in `src/App.tsx` point to R2 (or staged for first data PR)
+- [ ] vercel.json CSP updated with R2 hostname(s) in connect-src (https://*.r2.cloudflarestorage.com etc.); headers verified on preview deploy + securityheaders.com (or curl -I); see ASSET-HOSTING.md and vercel.json comments. Record score.
 - [ ] `npm run build` clean; preview deploy on Vercel works (mobile + desktop)
 - [ ] Disclaimers visible and prominent: shell banner, every detail panel, saved panel, footer, README (test by loading app)
 - [ ] Privacy analytics placeholder active or dashboard toggle enabled (Vercel Analytics / Cloudflare; confirm no PII)
@@ -23,6 +24,7 @@ Use this before any public posts. Tick items only when complete. Reference DESIG
 - [ ] No over-promising language in UI or README ("authoritative" tempered with "verify on site")
 - [ ] LICENSE + no warranty language intact
 - [ ] (Optional) Quick attorney glance on recreational use disclaimer (Michigan) if public traffic expected
+- [ ] Disclaimer font/contrast reviewed for "prominent" (see .disclaimer in index.css + shell banner); legal notice readability confirmed on mobile + desktop
 
 ## Announcement Prep
 - [ ] Short announcement draft ready (example below; customize):
