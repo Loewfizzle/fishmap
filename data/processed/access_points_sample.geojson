@@ -1,0 +1,286 @@
+{
+  "type": "FeatureCollection",
+  "name": "fishmap_access_points_sample_pr1",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:EPSG::4326"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.6721,
+          42.9682
+        ]
+      },
+      "properties": {
+        "id": "gr-fishladder-001",
+        "name": "Fish Ladder Park - Grand River Shore",
+        "waterbody": "Grand River (mainstem)",
+        "lat": 42.9682,
+        "lon": -85.6721,
+        "raw_type": "bank",
+        "source_hint": "midnr + grdata",
+        "access_type": "bank",
+        "access_quality": "high",
+        "inferred": false,
+        "needs_review": false,
+        "parking": {
+          "has": true,
+          "capacity": "50+",
+          "surface": "paved",
+          "notes": "Large lot at 6th St Dam / Fish Ladder"
+        },
+        "facilities": [
+          "restroom",
+          "trash",
+          "benches",
+          "fish_cleaning",
+          "fish_ladder_viewing"
+        ],
+        "hours": "5:00 AM – 11:00 PM (city park rules)",
+        "ada": "partial",
+        "species": [
+          "steelhead",
+          "chinook",
+          "coho",
+          "smallmouth bass",
+          "walleye",
+          "channel catfish"
+        ],
+        "regulations": {
+          "summary": "Lower Grand River special muskie rules + standard trout/salmon regs; check current DNR digest",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "Excellent shore and wade fishing below dam. Strong current warning. Popular during salmon/steelhead runs. Fish viewing platform.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7367,
+          42.9419
+        ]
+      },
+      "properties": {
+        "id": "kent-johnson-002",
+        "name": "Johnson Park Shoreline (Millennium Park)",
+        "waterbody": "Grand River (mainstem)",
+        "lat": 42.9419,
+        "lon": -85.7367,
+        "raw_type": "bank",
+        "source_hint": "kent + grdata",
+        "access_type": "bank",
+        "access_quality": "high",
+        "inferred": false,
+        "needs_review": false,
+        "parking": {
+          "has": true,
+          "capacity": "100+",
+          "surface": "paved/gravel",
+          "notes": "Main lots at Millennium Park + Johnson Park trailheads"
+        },
+        "facilities": [
+          "restroom",
+          "trash",
+          "trails",
+          "playground"
+        ],
+        "hours": "Dawn to dusk (Kent County Parks)",
+        "ada": "yes",
+        "species": [
+          "smallmouth bass",
+          "northern pike",
+          "bluegill",
+          "crappie",
+          "channel catfish"
+        ],
+        "regulations": {
+          "summary": "Standard warmwater river regs; see Kent County / DNR for Eat Safe Fish guidance on Grand River",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "1.5+ miles of Grand River shoreline via Johnson Park Scenic Trail. Multiple fishing decks/ponds in adjacent Millennium Park.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Experience Grand Rapids / DNR family-friendly fishing listings",
+            "url": "https://www.experiencegr.com/things-to-do/outdoors-and-sports/fishing/",
+            "retrieved": "2026-05-20"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.6942,
+          42.9937
+        ]
+      },
+      "properties": {
+        "id": "gr-richmond-003",
+        "name": "Richmond Park Fishing Pier",
+        "waterbody": "Richmond Park Pond",
+        "lat": 42.9937,
+        "lon": -85.6942,
+        "raw_type": "pier",
+        "source_hint": "grdata + city parks",
+        "access_type": "pier",
+        "access_quality": "high",
+        "inferred": false,
+        "needs_review": false,
+        "parking": {
+          "has": true,
+          "capacity": "30+",
+          "surface": "paved"
+        },
+        "facilities": [
+          "restroom",
+          "trash",
+          "benches"
+        ],
+        "hours": "City park hours",
+        "ada": "partial",
+        "species": [
+          "bluegill",
+          "bass",
+          "crappie"
+        ],
+        "regulations": {
+          "summary": "Standard warmwater pond regs",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "Dedicated fishing pier on Richmond Park Pond. Family-friendly city park access.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.6122,
+          42.9546
+        ]
+      },
+      "properties": {
+        "id": "kent-reeds-004",
+        "name": "Reeds Lake Shore Access",
+        "waterbody": "Reeds Lake",
+        "lat": 42.9546,
+        "lon": -85.6122,
+        "raw_type": "bank",
+        "source_hint": "kent + experiencegr",
+        "access_type": "bank",
+        "access_quality": "high",
+        "inferred": false,
+        "needs_review": false,
+        "parking": {
+          "has": true,
+          "capacity": "50+",
+          "surface": "paved"
+        },
+        "facilities": [
+          "restroom",
+          "trash",
+          "playground",
+          "beach"
+        ],
+        "hours": "Park hours",
+        "ada": "yes",
+        "species": [
+          "bluegill",
+          "bass",
+          "northern pike",
+          "perch"
+        ],
+        "regulations": {
+          "summary": "Standard inland lake regs",
+          "url": "https://www.michigan.gov/dnr/things-to-do/fishing/fishing-regulations"
+        },
+        "notes": "Popular family shore fishing on Reeds Lake with easy public access and amenities.",
+        "sources": [
+          {
+            "name": "Michigan DNR Michigan Boating Facilities (MiBFF) + Shore Fishing resources",
+            "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "City of Grand Rapids Parks (GRData Open Data)",
+            "url": "https://grdata-grandrapids.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Kent County Parks & GIS Open Data",
+            "url": "https://kentcountymi-accesskent.opendata.arcgis.com/",
+            "retrieved": "2026-05-20"
+          },
+          {
+            "name": "Experience Grand Rapids / DNR family-friendly fishing listings",
+            "url": "https://www.experiencegr.com/things-to-do/outdoors-and-sports/fishing/",
+            "retrieved": "2026-05-20"
+          }
+        ],
+        "last_verified": "2026-03-15"
+      }
+    }
+  ]
+}

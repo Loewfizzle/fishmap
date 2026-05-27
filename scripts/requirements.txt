@@ -1,0 +1,13 @@
+# Fishmap ETL runtime (PR 1 minimal)
+# Used by Dockerfile.etl and `pip install -r scripts/requirements.txt`
+# Keep tiny: only what's needed for aoi generation + sample (full gdal/geopandas later)
+
+shapely>=2.0
+pyproj>=3.6
+
+# For future full ETL (commented; uncomment when expanding)
+# geopandas>=0.14
+# requests>=2.31
+
+# Validation / schema (optional, pure-python fallback used in PR1)
+# jsonschema>=4.0

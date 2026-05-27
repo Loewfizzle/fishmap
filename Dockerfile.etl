@@ -1,0 +1,41 @@
+# Dockerfile.etl — Reproducible ETL environment for fishmap
+# PR 1: supports `make etl-sample` + future GDAL/tippecanoe steps
+# Base: official python slim (small, reproducible). GDAL via system for full runs.
+
+FROM python:3.11-slim-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# System deps for shapely/pyproj (GEOS, proj) + GDAL (future) + build for tippecanoe if needed
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    build-essential \
+    libgdal-dev \
+    gdal-bin \
+    libgeos-dev \
+    libproj-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Tippecanoe: install from source for exact version (or use prebuilt in CI). For PR1 we mostly dry-run stub.
+# This step is slow; in real CI we often use a pre-built or skip full binary for dry-run validation only.
+RUN curl -sL https://github.com/mapbox/tippecanoe/archive/refs/tags/2.34.1.tar.gz | tar xz -C /tmp && \
+    cd /tmp/tippecanoe-2.34.1 && \
+    make -j$(nproc) && \
+    make install && \
+    rm -rf /tmp/tippecanoe-2.34.1
+
+WORKDIR /app
+
+# Python ETL deps (minimal for PR1 sample)
+COPY scripts/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Copy source (including scripts, Makefile, data/aoi)
+COPY . /app
+
+# Default: run the PR1 sample ETL (produces validated sample + manifest)
+CMD ["make", "etl-sample"]

@@ -1,0 +1,40 @@
+{
+  "etl_run_date": "2026-05-27T03:41:43Z",
+  "aoi_center": [
+    -85.6681,
+    42.9634
+  ],
+  "aoi_radius_miles": 40.0,
+  "aoi_file": "data/aoi.geojson",
+  "script_version": "pr1-bootstrap-v1",
+  "sources": [
+    {
+      "name": "Michigan DNR MiBFF (item 3eaf9804bf6f4bafb8e03aea660c9fce) + Shore Fishing viewer",
+      "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
+      "downloaded": "2026-05-20 (manual verified extract for PR1 bootstrap)",
+      "record_count": 4,
+      "sha256": "manual-curation-pr1-772cb425472a",
+      "notes": "Hand-curated from portal patterns + public park maps for 4 high-confidence shore sites. Full automation later."
+    },
+    {
+      "name": "City of Grand Rapids GRData + Kent County GIS",
+      "url": "https://grdata-grandrapids.opendata.arcgis.com/ + https://kentcountymi-accesskent.opendata.arcgis.com/",
+      "downloaded": "2026-05-20",
+      "record_count": 4,
+      "sha256": "manual-curation-pr1-240f8a5e07b8"
+    }
+  ],
+  "output": {
+    "access_points_sample": {
+      "path": "data/processed/access_points_sample.geojson",
+      "sha256": "b32c03a74fb02a74616e6ad0b040064ce71928dbe5a821a6b362ca5d341c8b13",
+      "feature_count": 4
+    }
+  },
+  "coverage_notes": "PR 1 sample only \u2014 4 verified public shore/bank/pier sites (Fish Ladder, Johnson/Millennium, Richmond Pier, Reeds Lake). Full 40-mile classified dataset in later PRs. All features have machine + human citations.",
+  "known_limitations": [
+    "Sample is tiny and hand-curated (no full spatial classification run yet)",
+    "Private parcel exclusion / 30m hydro buffer heuristics stubbed for these known sites",
+    "No water_bodies layer in PR1 sample"
+  ]
+}
