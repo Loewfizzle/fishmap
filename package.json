@@ -6,9 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0 || echo 'Lint (stub - expand in PR2)'",
     "preview": "vite preview",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" || echo 'prettier not fully configured (PR1 stub)'"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "typecheck": "tsc -b --noEmit",
+    "etl-sample": "py -m scripts.etl_sample",
+    "validate": "py -m scripts.validate_sample",
+    "docker-etl": "docker build -f Dockerfile.etl -t fishmap-etl . && docker run --rm -v ${PWD}/data:/data fishmap-etl make etl-sample"
   },
   "dependencies": {
     "@makina-corpus/maplibre-offline-pmtiles": "^2.1.1",
