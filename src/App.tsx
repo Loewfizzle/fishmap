@@ -5,10 +5,21 @@ import rawAccess from "../data/processed/access_points_sample.geojson?raw";
 const accessGeoJson = JSON.parse(rawAccess) as any;
 
 // Minimal shape for the real PR1 sample (full provenance in the GeoJSON)
+// PR 3: extended with practical fields from sample for rich panels
 interface SourceCitation {
   name: string;
   url: string;
   retrieved: string;
+}
+interface ParkingInfo {
+  has: boolean;
+  capacity?: string;
+  surface?: string;
+  notes?: string;
+}
+interface RegulationsInfo {
+  summary: string;
+  url: string;
 }
 interface AccessSite {
   id: string;
@@ -19,6 +30,14 @@ interface AccessSite {
   notes?: string;
   sources: SourceCitation[];
   last_verified: string;
+  lat?: number;
+  lon?: number;
+  parking?: ParkingInfo;
+  facilities?: string[];
+  hours?: string;
+  ada?: string;
+  species?: string[];
+  regulations?: RegulationsInfo;
 }
 
 const SHORE_TYPES = [
@@ -46,6 +65,24 @@ function App() {
   const [geoError, setGeoError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
+  // PR 3: My Saved Spots (localStorage + JSON, per DESIGN: Dexie only if simplest; here pure localStorage)
+  const [savedSpotIds, setSavedSpotIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("fishmap_saved_spots");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showSaved, setShowSaved] = useState(false);
+
+  // Persist saved spots
+  useEffect(() => {
+    try {
+      localStorage.setItem("fishmap_saved_spots", JSON.stringify(savedSpotIds));
+    } catch {}
+  }, [savedSpotIds]);
+
   // Real data wired from PR 1 (no more hardcoded)
   const allFeatures = accessGeoJson.features;
   const allSites = useMemo(
@@ -64,6 +101,40 @@ function App() {
     });
     return m;
   }, [userLocation, allFeatures]);
+
+  // PR 3 helpers (smallest, follow existing patterns; no new deps)
+  const isSaved = (id: string) => savedSpotIds.includes(id);
+  const toggleSaved = (id: string) => {
+    setSavedSpotIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+  const getCoordsForSite = (site: AccessSite): [number, number] => {
+    if (site.lon != null && site.lat != null) return [site.lon, site.lat];
+    const feat: any = allFeatures.find((f: any) => f.properties.id === site.id);
+    return feat?.geometry?.coordinates ?? [-85.6681, 42.9634];
+  };
+  const openDirections = (site: AccessSite) => {
+    const [lon, lat] = getCoordsForSite(site);
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+    window.open(url, "_blank", "noopener");
+  };
+  const handleShare = async (site: AccessSite) => {
+    const text = `${site.name} — ${site.waterbody} (shore/dock access). Last verified ${site.last_verified}. View on Fishmap.`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: site.name, text });
+      } else {
+        await navigator.clipboard.writeText(text + " " + window.location.href);
+      }
+    } catch {}
+  };
+  const formatAda = (ada?: string) => {
+    if (!ada) return "Unknown";
+    if (ada.toLowerCase() === "yes") return "✅ ADA accessible";
+    if (ada.toLowerCase() === "partial") return "◐ Partial ADA";
+    return "🚫 Not ADA";
+  };
 
   // Client-side filtered + optionally distance-sorted list (search + chips + shore toggle)
   const filteredSites = useMemo(() => {
@@ -177,7 +248,7 @@ function App() {
         const id = feature.properties.id as string;
         setSelectedId(id);
         const p = feature.properties;
-        const html = `<div style="font:13px system-ui;max-width:220px"><strong>${p.name}</strong><br/><span style="color:#334155">${p.waterbody}</span><br/><span style="background:#ecfdf5;color:#166534;padding:1px 4px;border-radius:2px;font-size:10px">${p.access_type}</span> <span style="color:#64748b;font-size:10px">• ${p.access_quality}</span><div style="margin-top:3px;font-size:10px;color:#64748b">See panel below for citations</div></div>`;
+        const html = `<div style="font:13px system-ui;max-width:220px"><strong>${p.name}</strong><br/><span style="color:#334155">${p.waterbody}</span><br/><span style="background:#ecfdf5;color:#166534;padding:1px 4px;border-radius:2px;font-size:10px">${p.access_type}</span> <span style="color:#64748b;font-size:10px">• ${p.access_quality}</span><div style="margin-top:3px;font-size:10px;color:#64748b">Tap marker or list for rich details + citations</div></div>`;
         new maplibregl.Popup({ closeButton: true, maxWidth: "240px" })
           .setLngLat(e.lngLat)
           .setHTML(html)
@@ -361,18 +432,28 @@ function App() {
               Shore &amp; Dock Fishing • 40-mile Grand Rapids radius
             </p>
           </div>
-          <div className="text-xs px-3 py-1 bg-emerald-100 text-emerald-800 rounded font-mono">
-            PR 2 • REAL SAMPLE DATA
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSaved(true)}
+              className="text-xs px-2.5 py-1 bg-white border border-emerald-300 text-emerald-800 rounded hover:bg-emerald-50 font-mono"
+              title="My Saved Spots (localStorage)"
+            >
+              ⭐ Saved ({savedSpotIds.length})
+            </button>
+            <div className="text-xs px-3 py-1 bg-emerald-100 text-emerald-800 rounded font-mono">
+              PR 3 • RICH DETAILS
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6">
         <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded text-sm">
-          <strong>PR 2 prototype.</strong> Real{" "}
-          <code>data/processed/access_points_sample.geojson</code> (4 sites with
-          full citations from PR 1 ETL). Uses exact MapLibre shore filter
-          expression from DESIGN.md. All client-side.
+          <strong>PR 3.</strong> Rich detail panels (mobile bottom sheet +
+          desktop side), full practical fields + clickable
+          citations/regulations, Get Directions, Share, My Saved Spots
+          (localStorage). Built on PR 2 map. Sample data only (PR 6 adds full
+          dataset).
         </div>
 
         {/* Filters + Near me (search + shore toggle + type chips + geolocation + turf) */}
@@ -447,64 +528,7 @@ function App() {
           </p>
         </section>
 
-        {/* Basic detail panel/popup content (name, waterbody, access_type, access_quality, sources[] with citations) */}
-        {selectedSite && (
-          <div className="mb-5 detail-panel">
-            <div className="flex justify-between gap-3">
-              <div className="min-w-0">
-                <div className="font-semibold">{selectedSite.name}</div>
-                <div className="text-sm text-slate-600">
-                  {selectedSite.waterbody}
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <span className="inline-block text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium">
-                  {selectedSite.access_type}
-                </span>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  {selectedSite.access_quality}
-                </div>
-              </div>
-              <button
-                onClick={clearSelection}
-                className="text-xs text-slate-400 hover:text-slate-700 self-start"
-              >
-                close
-              </button>
-            </div>
-            {selectedSite.notes && (
-              <p className="mt-2 text-sm">{selectedSite.notes}</p>
-            )}
-            <div className="mt-3 pt-2 border-t text-[11px]">
-              <div className="font-medium text-slate-700 mb-0.5">
-                Sources (citations)
-              </div>
-              <ul className="space-y-0.5">
-                {selectedSite.sources.map((s: SourceCitation, i: number) => (
-                  <li key={i}>
-                    <a
-                      href={s.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {s.name}
-                    </a>
-                    <span className="text-slate-400">
-                      {" "}
-                      • retrieved {s.retrieved}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="text-[10px] text-slate-400 mt-1">
-                last verified {selectedSite.last_verified}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Interactive list (click rows to fly/highlight on map + populate detail) */}
+        {/* Interactive list (click rows to fly/highlight on map + populate rich PR3 detail) */}
         <section>
           <div className="flex items-baseline justify-between mb-2">
             <h2 className="text-lg font-medium">
@@ -547,13 +571,25 @@ function App() {
                         {distBadge}
                       </div>
                     </div>
-                    <div className="text-right text-xs shrink-0">
+                    <div className="text-right text-xs shrink-0 flex flex-col items-end gap-0.5">
                       <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium">
                         {site.access_type}
                       </span>
                       <div className="text-[10px] text-slate-500 mt-px">
                         {site.access_quality}
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSaved(site.id);
+                        }}
+                        className="text-[10px] px-1 py-0.5 mt-0.5 text-emerald-700 hover:text-emerald-900"
+                        title={
+                          isSaved(site.id) ? "Remove from saved" : "Save spot"
+                        }
+                      >
+                        {isSaved(site.id) ? "★ saved" : "☆ save"}
+                      </button>
                     </div>
                   </div>
                   {site.notes && (
@@ -569,6 +605,266 @@ function App() {
             })}
           </div>
         </section>
+
+        {/* PR 3: Rich detail panel — mobile bottom sheet (default) + desktop side panel.
+            Follows DESIGN: full practical fields, clickable regs/citations, disclaimers prominent,
+            Get Directions (Google intent), share, save, close. Smallest overlay (no map rewrite). */}
+        {selectedSite && (
+          <div
+            className="rich-detail fixed inset-x-0 bottom-0 z-[60] flex flex-col bg-white border-t md:border-t-0 md:border-l md:inset-y-0 md:left-auto md:right-0 md:w-96 md:max-h-full overflow-hidden rounded-t-xl md:rounded-t-none md:rounded-l-xl"
+            role="dialog"
+            aria-label="Access point details"
+          >
+            {/* Header bar with actions */}
+            <div className="md:hidden">
+              <div className="sheet-handle" />
+            </div>
+            <div className="flex items-start justify-between gap-2 px-3 py-2 border-b bg-slate-50 shrink-0">
+              <div className="min-w-0">
+                <div className="font-semibold text-base leading-tight pr-1">
+                  {selectedSite.name}
+                </div>
+                <div className="text-sm text-slate-600">
+                  {selectedSite.waterbody}
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0 text-right">
+                <span className="inline-block text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium">
+                  {selectedSite.access_type} • {selectedSite.access_quality}
+                </span>
+                <div className="flex gap-1 flex-wrap justify-end">
+                  <button
+                    onClick={() => toggleSaved(selectedSite.id)}
+                    className="action-btn text-xs"
+                    title={
+                      isSaved(selectedSite.id) ? "Unsave" : "Save to My Spots"
+                    }
+                  >
+                    {isSaved(selectedSite.id) ? "★ Saved" : "☆ Save"}
+                  </button>
+                  <button
+                    onClick={() => openDirections(selectedSite)}
+                    className="action-btn primary text-xs"
+                  >
+                    Get Directions
+                  </button>
+                  <button
+                    onClick={() => handleShare(selectedSite)}
+                    className="action-btn text-xs"
+                  >
+                    Share
+                  </button>
+                  <button
+                    onClick={clearSelection}
+                    className="action-btn text-xs"
+                    aria-label="Close details"
+                  >
+                    ✕ Close
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Scrollable rich content */}
+            <div className="overflow-auto p-3 text-sm space-y-3 flex-1 bg-white">
+              {/* Practical details per DESIGN PR3 + sample schema */}
+              {selectedSite.hours && (
+                <div>
+                  <span className="font-medium text-slate-700">Hours: </span>
+                  <span className="text-slate-600">{selectedSite.hours}</span>
+                </div>
+              )}
+
+              {selectedSite.parking && selectedSite.parking.has && (
+                <div>
+                  <div className="font-medium text-slate-700">🚗 Parking</div>
+                  <div className="text-slate-600 text-sm">
+                    {selectedSite.parking.capacity || "Available"}
+                    {selectedSite.parking.surface
+                      ? ` • ${selectedSite.parking.surface}`
+                      : ""}
+                    {selectedSite.parking.notes
+                      ? ` — ${selectedSite.parking.notes}`
+                      : ""}
+                  </div>
+                </div>
+              )}
+
+              {selectedSite.facilities &&
+                selectedSite.facilities.length > 0 && (
+                  <div>
+                    <div className="font-medium text-slate-700 mb-0.5">
+                      Facilities
+                    </div>
+                    <div>
+                      {selectedSite.facilities.map((f: string, i: number) => (
+                        <span key={i} className="pill">
+                          {f.replace(/_/g, " ")}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              <div>
+                <span className="font-medium text-slate-700">
+                  Accessibility:{" "}
+                </span>
+                <span className="text-slate-600">
+                  {formatAda(selectedSite.ada)}
+                </span>
+              </div>
+
+              {selectedSite.species && selectedSite.species.length > 0 && (
+                <div>
+                  <div className="font-medium text-slate-700 mb-0.5">
+                    Target species
+                  </div>
+                  <div>
+                    {selectedSite.species.map((sp: string, i: number) => (
+                      <span key={i} className="pill">
+                        {sp}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedSite.regulations && (
+                <div>
+                  <div className="font-medium text-slate-700">Regulations</div>
+                  <div className="text-slate-600 text-sm mb-1">
+                    {selectedSite.regulations.summary}
+                  </div>
+                  <a
+                    href={selectedSite.regulations.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block text-blue-700 underline text-sm hover:text-blue-900"
+                  >
+                    View current DNR fishing regulations ↗
+                  </a>
+                </div>
+              )}
+
+              {selectedSite.notes && (
+                <div className="text-slate-600">{selectedSite.notes}</div>
+              )}
+
+              {/* Prominent disclaimer + citations (DESIGN non-negotiable) */}
+              <div className="disclaimer mt-2">
+                <strong>Disclaimer:</strong> This is not legal advice. Always
+                verify current regulations, property boundaries, hours, and
+                conditions on-site and with official Michigan DNR sources before
+                fishing. Data is from the curated PR 1 sample only.
+              </div>
+
+              <div className="pt-2 border-t text-[11px]">
+                <div className="font-medium text-slate-700 mb-0.5">
+                  Sources &amp; citations
+                </div>
+                <ul className="space-y-0.5">
+                  {selectedSite.sources.map((s: SourceCitation, i: number) => (
+                    <li key={i}>
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {s.name}
+                      </a>
+                      <span className="text-slate-400">
+                        {" "}
+                        • retrieved {s.retrieved}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="text-[10px] text-slate-500 mt-1">
+                  last verified {selectedSite.last_verified}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PR 3: Simple My Saved Spots list UI (localStorage backed). Opened from header.
+            Click row to fly+select (opens rich detail). Smallest viable modal-style panel. */}
+        {showSaved && (
+          <div
+            className="saved-panel fixed inset-x-0 bottom-0 z-[70] md:inset-y-0 md:left-auto md:right-0 md:w-96 flex flex-col bg-white border-t md:border-t-0 md:border-l shadow-2xl rounded-t-xl md:rounded-t-none md:rounded-l-xl overflow-hidden"
+            role="dialog"
+            aria-label="My Saved Spots"
+          >
+            <div className="md:hidden">
+              <div className="sheet-handle" />
+            </div>
+            <div className="flex items-center justify-between px-3 py-2 border-b bg-slate-50 shrink-0">
+              <div className="font-semibold">
+                ⭐ My Saved Spots ({savedSpotIds.length})
+              </div>
+              <button
+                onClick={() => setShowSaved(false)}
+                className="action-btn text-xs"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="overflow-auto p-3 flex-1 text-sm">
+              {savedSpotIds.length === 0 ? (
+                <div className="text-slate-500">
+                  No saved spots yet. Tap “☆ Save” in any detail panel (or list
+                  cards) to add local favorites. Saved spots persist in your
+                  browser (localStorage).
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  {allSites
+                    .filter((s: AccessSite) => savedSpotIds.includes(s.id))
+                    .map((site: AccessSite) => (
+                      <div
+                        key={site.id}
+                        onClick={() => {
+                          flyToAndSelect(site.id);
+                          setShowSaved(false);
+                        }}
+                        className="bg-white border rounded p-2 cursor-pointer hover:border-emerald-300 active:bg-emerald-50"
+                      >
+                        <div className="flex justify-between">
+                          <div className="min-w-0">
+                            <div className="font-medium leading-tight">
+                              {site.name}
+                            </div>
+                            <div className="text-xs text-slate-600">
+                              {site.waterbody}
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSaved(site.id);
+                            }}
+                            className="text-xs text-red-600 hover:text-red-800 px-1"
+                            title="Remove"
+                          >
+                            remove
+                          </button>
+                        </div>
+                        <div className="text-[10px] text-emerald-700 mt-0.5">
+                          {site.access_type} • {site.access_quality} — tap for
+                          details
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+              <div className="mt-3 text-[10px] text-slate-400 border-t pt-2">
+                Stored locally in your browser only. Clear site data to reset.
+              </div>
+            </div>
+          </div>
+        )}
 
         <footer className="mt-8 text-xs text-slate-500 border-t pt-3">
           All data carries machine-readable provenance from PR 1 ETL. See{" "}
