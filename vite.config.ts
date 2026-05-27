@@ -19,7 +19,13 @@ export default defineConfig({
         scope: '/',
         start_url: '/',
         icons: [
-          // Minimal: real icons would be added in later polish; browser falls back to favicon
+          // Placeholder using existing asset (real 192/512 pngs + maskable in PR6/7 polish per DESIGN).
+          // Addresses Issue 7: ensures usable icons for install prompts on Android/iOS.
+          {
+            src: "/vite.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+          },
         ],
       },
       workbox: {

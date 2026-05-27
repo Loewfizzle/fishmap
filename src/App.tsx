@@ -8,8 +8,20 @@ import {
 } from "@makina-corpus/maplibre-offline-pmtiles";
 import rawAccess from "../data/processed/access_points_sample.geojson?raw";
 
-// PR 5: register offline protocol at module load (required before any MapLibre using offline-pmtiles:// sources)
-OfflinePlugin.registerProtocol(maplibregl);
+// PR 5: module-scope singletons + protocol registration (addresses Issue 2 duplicate instances + Issue 9 StrictMode safety).
+// Both protocols registered once at load (guarded for remounts). Singleton plugin instance reused everywhere.
+let protocolsRegistered = false;
+function ensureProtocolsRegistered() {
+  if (protocolsRegistered) return;
+  OfflinePlugin.registerProtocol(maplibregl);
+  const pmProtocol = new Protocol();
+  maplibregl.addProtocol("pmtiles", pmProtocol.tile);
+  protocolsRegistered = true;
+}
+ensureProtocolsRegistered();
+
+const offlinePlugin = new OfflinePlugin(); // canonical single instance (no more lazy new in handlers/effects)
+
 const accessGeoJson = JSON.parse(rawAccess) as any; // initial any; narrowed below after interfaces (see Issue 5)
 
 // Minimal shape for the real PR1 sample (full provenance in the GeoJSON)
@@ -47,6 +59,18 @@ interface AccessSite {
   species?: string[];
   regulations?: RegulationsInfo;
 }
+
+// PR 5: minimal local interfaces for type safety on new offline flows (addresses Issue 8 nit + supports Issue 6 guards).
+// Mirrors library OfflineProgress shape (from README + usage) and DOM BeforeInstallPromptEvent without extra @types.
+interface OfflineProgress {
+  code: string;
+  message?: string;
+  progress?: number | string; // widened to match actual @makina-corpus/maplibre-offline-pmtiles type (string | number in some progress events)
+}
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
 
 // Lightweight GeoJSON types (avoids external @types/geojson dep for smallest PR3 change; reduces heavy as any usage per Issue 5)
 interface AccessFeature {
@@ -91,8 +115,9 @@ function App() {
   const [isLocating, setIsLocating] = useState(false);
 
   // PR 5: PWA + offline PMTiles region download + quota (OPFS via maplibre-offline-pmtiles per DESIGN PR5)
-  // Smallest addition: states + handlers + minimal UI row + graceful banner. No new layers or major refactors.
-  const offlinePluginRef = useRef<OfflinePlugin | null>(null);
+  // Reactive map via version key (Issue 1 fix); singleton plugin (Issue 2); typed flows (Issue 8).
+  // Build hygiene: stray *.tsbuildinfo + vite.config.js cleaned before this build (Issue 11).
+  const [mapVersion, setMapVersion] = useState(0); // bump to force map container remount + fresh useEffect closure with current offlineDownloaded
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [offlineDownloaded, setOfflineDownloaded] = useState<boolean>(() => {
     try {
@@ -108,33 +133,56 @@ function App() {
     quota: number;
     percent: number;
   } | null>(null);
-  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [offlineError, setOfflineError] = useState<string | null>(null);
 
-  // PR 5 offline handlers (declared early so useEffects can reference; follows existing localStorage/useRef patterns exactly)
+  // PR 5 offline handlers (centralized singleton plugin; guards per Issues 2/6; reactivity bump per Issue 1; typed per Issue 8).
+  // Smallest viable robustness: OPFS feature guard, re-download prevention, proper event typing.
+  function supportsOPFS(): boolean {
+    return !!(
+      navigator.storage &&
+      typeof navigator.storage.estimate === "function" &&
+      "estimate" in navigator.storage
+    );
+  }
+
   const refreshStorageInfo = async () => {
-    if (!offlinePluginRef.current)
-      offlinePluginRef.current = new OfflinePlugin();
+    if (!supportsOPFS()) {
+      setStorageInfo(null);
+      return;
+    }
     try {
-      const info = await offlinePluginRef.current.getStorageUsage();
-      setStorageInfo(info);
+      const info = await offlinePlugin.getStorageUsage();
+      setStorageInfo(info ?? null);
     } catch (e) {
       console.warn("fishmap: storage query failed", e);
+      setStorageInfo(null);
     }
   };
 
   const handleDownloadRegion = async () => {
-    if (!offlinePluginRef.current)
-      offlinePluginRef.current = new OfflinePlugin();
+    if (!supportsOPFS()) {
+      setOfflineError(
+        "OPFS not supported in this browser (required for offline PMTiles).",
+      );
+      return;
+    }
+    if (offlineDownloaded) {
+      setOfflineError(
+        "Region already cached. Clear site data or reload to re-download.",
+      );
+      return;
+    }
     // Use same URL as current basemap for fidelity to "current map state".
-    // In production (post PR4 R2 + regional extract) this would target the ~9-14MB gr-region z12 extract (see docs/pmtiles-extract-dryrun.txt).
+    // (See Issue 4 Response in review file for why not switched to non-existent regional.)
     const url = "https://build.protomaps.com/20260526.pmtiles";
     const name = "grand-rapids-region";
     setDownloadProgress(0);
     setDownloadStatus("START");
     setOfflineError(null);
     try {
-      await offlinePluginRef.current.downloadMap(url, name, (p: any) => {
+      await offlinePlugin.downloadMap(url, name, (p: OfflineProgress) => {
         const code = p?.code || "";
         setDownloadStatus(code);
         if (p?.progress != null)
@@ -145,9 +193,8 @@ function App() {
           } catch {}
           setOfflineDownloaded(true);
           refreshStorageInfo();
-          setDownloadStatus(
-            "COMPLETE — reload page to activate offline basemap",
-          );
+          setMapVersion((v) => v + 1); // reactive remount: map effect re-runs with fresh offlineDownloaded closure (Issue 1 fix, no page reload)
+          setDownloadStatus("COMPLETE — offline basemap activated");
         }
         if (code === OFFLINE_STATUS.ERROR_QUOTA) {
           setOfflineError(
@@ -205,17 +252,20 @@ function App() {
   }, [selectedId, showSaved]);
 
   // PR 5: online/offline listeners + beforeinstallprompt (natural install prompt) + initial quota snapshot
+  // Listeners use passive where safe; typed event (Issue 6/8).
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline, { passive: true } as any);
+    window.addEventListener("offline", onOffline, { passive: true } as any);
 
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
-      setDeferredInstallPrompt(e);
+      setDeferredInstallPrompt(e as BeforeInstallPromptEvent);
     };
-    window.addEventListener("beforeinstallprompt", onBeforeInstall as any);
+    window.addEventListener("beforeinstallprompt", onBeforeInstall as any, {
+      passive: false,
+    });
 
     // initial storage info (OPFS quota awareness)
     refreshStorageInfo();
@@ -374,20 +424,13 @@ function App() {
   // Smallest integration: inline minimal style sourcing the public Protomaps build (full-planet
   // but range-request efficient; regional extract via dry-run committed in docs). Custom access
   // remains GeoJSON for PR1 sample (not "large"; full switch + removal in PR6 when thematic PMTiles ready).
+  //
+  // PR 5 reactivity (Issue 1): keyed container div causes this effect + fresh closure to re-run on download COMPLETE (via setMapVersion).
+  // No page reload required. Protocol setup centralized at module (Issue 9). loadMap added for lib best-practice (Issue 3).
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
-    if (!offlinePluginRef.current) {
-      offlinePluginRef.current = new OfflinePlugin();
-    }
-
-    // Register PMTiles protocol handler once (required for any pmtiles:// sources)
-    const protocol = new Protocol();
-    maplibregl.addProtocol("pmtiles", protocol.tile);
-    // offline-pmtiles:// already registered at module top via PR 5 lib
-
-    // PR 5: choose source at init time — offline protocol if region previously downloaded (persisted flag)
-    // After download completes user is prompted to reload so this effect captures the offline url.
+    // PR 5: protomaps URL chosen from current (fresh on remount) offlineDownloaded state.
     const protomapsUrl = offlineDownloaded
       ? "offline-pmtiles://grand-rapids-region"
       : "pmtiles://https://build.protomaps.com/20260526.pmtiles";
@@ -397,7 +440,7 @@ function App() {
       // PR4: Protomaps basemap as vector tiles (replaces demo raster-ish style).
       // Uses public build (see docs/ASSET-HOSTING.md + dry-run for regional plan).
       // Minimal layers for context (water/roads) to prove vector tile basemap; access overlaid.
-      // PR 5: url may be offline-pmtiles:// after region download + reload (OPFS backed, no net required).
+      // PR 5: url may be offline-pmtiles:// (OPFS backed, no net required) when region cached.
       style: {
         version: 8,
         glyphs: "https://cdn.protomaps.com/fonts/pbf/{fontstack}/{range}.pbf",
@@ -432,7 +475,7 @@ function App() {
     });
     mapRef.current = map;
 
-    map.on("load", () => {
+    map.on("load", async () => {
       map.addSource("access", {
         type: "geojson",
         data: typedAccessGeoJson,
@@ -469,6 +512,18 @@ function App() {
       // Initial filter (Shore & Dock Only default, per DESIGN expression)
       map.setFilter("access-points", buildFilterExpr() as any);
 
+      // PR 5: call loadMap for the offline case per library README recommendation (Issue 3).
+      // We still construct style manually (for our inline water/roads layers + custom access overlay);
+      // loadMap provides plugin bookkeeping / optional style application even when using manual offline-pmtiles:// URL.
+      // Safe no-op / harmless if already using http pmtiles URL.
+      if (offlineDownloaded) {
+        try {
+          await offlinePlugin.loadMap(map, "grand-rapids-region");
+        } catch (e) {
+          console.warn("fishmap: offline loadMap failed (non-fatal)", e);
+        }
+      }
+
       // Popup + select on marker click (basic info; full citations in panel)
       map.on("click", "access-points", (e) => {
         const feature = e.features && e.features[0];
@@ -495,7 +550,7 @@ function App() {
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [offlineDownloaded]); // Note: primary trigger is key on container div (see JSX); dep here for safety on any in-place updates.
 
   // Keep map layer filter in sync with UI (exact DESIGN expr)
   useEffect(() => {
@@ -644,11 +699,12 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      {/* PR 5: offline status banner (graceful degradation; visible in airplane mode) */}
+      {/* PR 5: offline status banner (graceful degradation; visible in airplane mode). Updated per Issue 10 for accuracy. */}
       {!isOnline && (
         <div className="bg-amber-500 text-white text-center text-xs py-0.5 font-medium">
-          Offline mode — app, search, details, saved spots, and downloaded map
-          region are fully functional.
+          Offline mode — UI, search, details, saved spots always functional.
+          Basemap geometry active if region cached (labels may need prior online
+          load; see glyphs note in map section).
         </div>
       )}
       <header className="border-b bg-white">
@@ -683,9 +739,10 @@ function App() {
           dataset).
         </div>
 
-        {/* PR 5: Full PWA + Offline Region Download (smallest addition per DESIGN + user instructions).
-            One download -> map+search+details+saved work offline. Quota, banner, progress, install prompt.
-            Uses current map state (no new layers). Reload after download to switch basemap to OPFS. */}
+        {/* PR 5: Full PWA + Offline Region Download (per DESIGN + review fixes).
+            Reactive (Issue 1): download COMPLETE auto-activates via mapVersion key (no reload).
+            Guards (Issue 6): OPFS detect + re-dl prevention. Glyphs note (Issue 5): see lib README "Handling Offline Styles".
+            Uses current map state (no new layers). */}
         <div className="mb-3 p-2 bg-sky-50 border border-sky-200 rounded text-xs flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-medium text-sky-800">PR 5 Offline:</span>
           <span
@@ -698,7 +755,7 @@ function App() {
           <button
             onClick={refreshStorageInfo}
             className="action-btn text-[10px] px-1.5 py-0.5"
-            title="Refresh OPFS storage usage/quota"
+            title="Refresh OPFS storage usage/quota (null if unsupported)"
           >
             💾{" "}
             {storageInfo
@@ -709,7 +766,8 @@ function App() {
             onClick={handleDownloadRegion}
             disabled={
               downloadStatus.startsWith("START") ||
-              downloadStatus.startsWith("PROGRESS")
+              downloadStatus.startsWith("PROGRESS") ||
+              offlineDownloaded
             }
             className="action-btn primary text-[10px] px-1.5 py-0.5"
             title="Download Grand Rapids Region for Offline Use (stores PMTiles in OPFS; fulfills mobile field requirement)"
@@ -737,7 +795,7 @@ function App() {
           )}
           {offlineDownloaded && (
             <span className="text-emerald-700 font-medium">
-              Region cached ✓ (reload to use for basemap)
+              Region cached ✓ (basemap active)
             </span>
           )}
         </div>
@@ -803,7 +861,12 @@ function App() {
               Centered on Grand Rapids • Click markers or list rows
             </span>
           </div>
-          <div ref={mapContainer} className="map-container bg-slate-200" />
+          {/* PR 5: key={mapVersion} forces clean remount of map + useEffect on download COMPLETE (reactive source switch, Issue 1). No page reload. */}
+          <div
+            key={mapVersion}
+            ref={mapContainer}
+            className="map-container bg-slate-200"
+          />
           <p className="text-[10px] text-slate-500 mt-1">
             Base layer filter (DESIGN.md):{" "}
             <code>
@@ -812,6 +875,10 @@ function App() {
             </code>{" "}
             (runtime may wrap with "all" for chips; shoreOnly uses this
             literally)
+            <br />
+            {/* Issue 5: glyphs/fonts external (cdn.protomaps). Per lib README "Handling Offline Styles", SW caches best-effort but labels may be missing in pure offline until first online visit. Geometry + access points always work. */}
+            Note: basemap vector geometry offline via OPFS; text labels
+            best-effort.
           </p>
         </section>
 
