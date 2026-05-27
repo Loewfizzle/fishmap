@@ -12,7 +12,10 @@
     "typecheck": "tsc -b --noEmit",
     "etl-sample": "py -m scripts.etl_sample",
     "validate": "py -m scripts.validate_sample",
-    "docker-etl": "docker build -f Dockerfile.etl -t fishmap-etl . && docker run --rm -v ${PWD}/data:/data fishmap-etl make etl-sample"
+    "docker-etl": "docker build -f Dockerfile.etl -t fishmap-etl . && docker run --rm -v ${PWD}/data:/data fishmap-etl make etl-sample",
+    "etl-validate": "py -m scripts.validate_sample",
+    "clean": "git clean -fdX",
+    "full-verify": "npm run typecheck && npm run lint && npm run build && py -m scripts.validate_sample"
   },
   "dependencies": {
     "@makina-corpus/maplibre-offline-pmtiles": "^2.1.1",
