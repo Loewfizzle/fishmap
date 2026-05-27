@@ -34,12 +34,6 @@ body {
   color: white;
   border-color: #0f766e;
 }
-.detail-panel {
-  background: white;
-  border: 1px solid #64748b;
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-}
 
 /* PR 3: responsive rich detail (mobile bottom sheet + desktop side panel) + saved list */
 .rich-detail {

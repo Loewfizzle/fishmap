@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import { distance } from "@turf/distance";
 import rawAccess from "../data/processed/access_points_sample.geojson?raw";
-const accessGeoJson = JSON.parse(rawAccess) as any;
+const accessGeoJson = JSON.parse(rawAccess) as any; // initial any; narrowed below after interfaces (see Issue 5)
 
 // Minimal shape for the real PR1 sample (full provenance in the GeoJSON)
 // PR 3: extended with practical fields from sample for rich panels
@@ -28,8 +28,8 @@ interface AccessSite {
   access_type: string;
   access_quality: string;
   notes?: string;
-  sources: SourceCitation[];
-  last_verified: string;
+  sources?: SourceCitation[]; // made optional for runtime safety (Issue 3); data load is cast JSON
+  last_verified?: string;
   lat?: number;
   lon?: number;
   parking?: ParkingInfo;
@@ -40,6 +40,19 @@ interface AccessSite {
   regulations?: RegulationsInfo;
 }
 
+// Lightweight GeoJSON types (avoids external @types/geojson dep for smallest PR3 change; reduces heavy as any usage per Issue 5)
+interface AccessFeature {
+  type: "Feature";
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: AccessSite;
+}
+interface AccessGeoJson {
+  type: "FeatureCollection";
+  features: AccessFeature[];
+}
+
+const typedAccessGeoJson: AccessGeoJson = accessGeoJson as AccessGeoJson;
+
 const SHORE_TYPES = [
   "bank",
   "dock",
@@ -48,6 +61,10 @@ const SHORE_TYPES = [
   "road_end",
   "park_shore",
 ] as const;
+
+// Generalized disclaimer (avoids hardcoding "PR 1 sample" so it ages better post-PR6; Issue 10)
+const DATA_DISCLAIMER =
+  "This is not legal advice. Always verify current regulations, property boundaries, hours, and conditions on-site and with official Michigan DNR sources before fishing. (Prototype sample data.)";
 
 function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -70,7 +87,8 @@ function App() {
     try {
       const raw = localStorage.getItem("fishmap_saved_spots");
       return raw ? JSON.parse(raw) : [];
-    } catch {
+    } catch (e) {
+      console.warn("fishmap: saved spots load failed", e);
       return [];
     }
   });
@@ -80,13 +98,27 @@ function App() {
   useEffect(() => {
     try {
       localStorage.setItem("fishmap_saved_spots", JSON.stringify(savedSpotIds));
-    } catch {}
+    } catch (e) {
+      console.warn("fishmap: saved spots persist failed", e);
+    }
   }, [savedSpotIds]);
 
+  // Basic a11y: Escape closes open panels (Issue 12; focus trap out of scope for smallest PR3)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedId) clearSelection();
+        else if (showSaved) setShowSaved(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, showSaved]);
+
   // Real data wired from PR 1 (no more hardcoded)
-  const allFeatures = accessGeoJson.features;
+  const allFeatures = typedAccessGeoJson.features;
   const allSites = useMemo(
-    () => allFeatures.map((f: any) => f.properties as AccessSite),
+    () => allFeatures.map((f) => f.properties),
     [allFeatures],
   );
 
@@ -94,9 +126,9 @@ function App() {
   const siteDistances = useMemo(() => {
     if (!userLocation) return new Map<string, number>();
     const m = new Map<string, number>();
-    allFeatures.forEach((f: any) => {
-      const id = f.properties.id as string;
-      const coords = f.geometry.coordinates as [number, number];
+    allFeatures.forEach((f) => {
+      const id = f.properties.id;
+      const coords = f.geometry.coordinates;
       m.set(id, distance(userLocation, coords, { units: "miles" }));
     });
     return m;
@@ -111,11 +143,22 @@ function App() {
   };
   const getCoordsForSite = (site: AccessSite): [number, number] => {
     if (site.lon != null && site.lat != null) return [site.lon, site.lat];
-    const feat: any = allFeatures.find((f: any) => f.properties.id === site.id);
+    const feat = allFeatures.find((f) => f.properties.id === site.id);
     return feat?.geometry?.coordinates ?? [-85.6681, 42.9634];
   };
   const openDirections = (site: AccessSite) => {
-    const [lon, lat] = getCoordsForSite(site);
+    const coords = getCoordsForSite(site);
+    if (
+      !coords ||
+      (coords[0] === -85.6681 &&
+        coords[1] === 42.9634 &&
+        !site.lon &&
+        !site.lat)
+    ) {
+      setGeoError("Unable to get coordinates for directions");
+      return;
+    }
+    const [lon, lat] = coords;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
     window.open(url, "_blank", "noopener");
   };
@@ -127,7 +170,9 @@ function App() {
       } else {
         await navigator.clipboard.writeText(text + " " + window.location.href);
       }
-    } catch {}
+    } catch {
+      console.warn("fishmap: share failed");
+    }
   };
   const formatAda = (ada?: string) => {
     if (!ada) return "Unknown";
@@ -136,10 +181,29 @@ function App() {
     return "🚫 Not ADA";
   };
 
+  // Reliable popup after flyTo (replaces brittle setTimeout; uses moveend per Issue 4)
+  function showPopupAfterFly(
+    m: MapLibreMap,
+    lngLat: [number, number],
+    html: string,
+  ) {
+    m.once("moveend", () => {
+      if (mapRef.current) {
+        new maplibregl.Popup({ closeButton: true, maxWidth: "240px" })
+          .setLngLat(lngLat)
+          .setHTML(html)
+          .addTo(mapRef.current);
+      }
+    });
+  }
+
   // Client-side filtered + optionally distance-sorted list (search + chips + shore toggle)
   const filteredSites = useMemo(() => {
     let result = allSites.filter((site: AccessSite) => {
-      if (shoreOnly && !SHORE_TYPES.includes(site.access_type as any))
+      if (
+        shoreOnly &&
+        !SHORE_TYPES.includes(site.access_type as (typeof SHORE_TYPES)[number])
+      )
         return false;
       // length===0 means "all types" (decoupled from Shore & Dock Only for Issue 1/4)
       if (activeTypes.length > 0 && !activeTypes.includes(site.access_type))
@@ -171,6 +235,7 @@ function App() {
   ]);
 
   // Exact MapLibre filter expression from DESIGN.md (PR 2 / ETL Reality section)
+  // Return type kept loose (MapLibre FilterSpecification is complex; unavoidable for smallest change)
   function buildFilterExpr(): any[] {
     let expr: any[] = ["!=", ["get", "access_type"], "unknown"];
     if (shoreOnly) {
@@ -207,7 +272,7 @@ function App() {
     map.on("load", () => {
       map.addSource("access", {
         type: "geojson",
-        data: accessGeoJson as any,
+        data: typedAccessGeoJson,
       });
 
       map.addLayer({
@@ -247,7 +312,7 @@ function App() {
         if (!feature?.properties) return;
         const id = feature.properties.id as string;
         setSelectedId(id);
-        const p = feature.properties;
+        const p = feature.properties as AccessSite;
         const html = `<div style="font:13px system-ui;max-width:220px"><strong>${p.name}</strong><br/><span style="color:#334155">${p.waterbody}</span><br/><span style="background:#ecfdf5;color:#166534;padding:1px 4px;border-radius:2px;font-size:10px">${p.access_type}</span> <span style="color:#64748b;font-size:10px">• ${p.access_quality}</span><div style="margin-top:3px;font-size:10px;color:#64748b">Tap marker or list for rich details + citations</div></div>`;
         new maplibregl.Popup({ closeButton: true, maxWidth: "240px" })
           .setLngLat(e.lngLat)
@@ -287,24 +352,19 @@ function App() {
   // Fly map + popup when selecting from list (provides the "highlight on map")
   const flyToAndSelect = (id: string) => {
     const m = mapRef.current;
-    const feat: any = allFeatures.find((f: any) => f.properties.id === id);
+    const feat = allFeatures.find((f) => f.properties.id === id);
     if (!feat) {
       setSelectedId(id);
       return;
     }
-    const [lon, lat] = feat.geometry.coordinates as [number, number];
+    const [lon, lat] = feat.geometry.coordinates;
     if (m) {
       m.flyTo({ center: [lon, lat], zoom: 13.5, duration: 550 });
-      setTimeout(() => {
-        if (mapRef.current) {
-          new maplibregl.Popup({ closeButton: true, maxWidth: "240px" })
-            .setLngLat([lon, lat])
-            .setHTML(
-              `<strong>${feat.properties.name}</strong><br/>${feat.properties.waterbody}`,
-            )
-            .addTo(mapRef.current);
-        }
-      }, 600);
+      showPopupAfterFly(
+        m,
+        [lon, lat],
+        `<strong>${feat.properties.name}</strong><br/>${feat.properties.waterbody}`,
+      );
     }
     setSelectedId(id);
   };
@@ -336,9 +396,13 @@ function App() {
         setSortedByDistance(true);
 
         // Build candidates that match the *current UI filters* (excluding distance sort)
-        const candidates: any[] = allFeatures.filter((f: any) => {
+        const candidates = allFeatures.filter((f) => {
           const p = f.properties;
-          if (snapShore && !SHORE_TYPES.includes(p.access_type)) return false;
+          if (
+            snapShore &&
+            !SHORE_TYPES.includes(p.access_type as (typeof SHORE_TYPES)[number])
+          )
+            return false;
           if (snapActive.length > 0 && !snapActive.includes(p.access_type))
             return false;
           if (snapSearch.trim()) {
@@ -358,9 +422,9 @@ function App() {
         // Nearest *only among candidates* (respects filters/search)
         let nearestId: string | null = null;
         let minD = Infinity;
-        let nearestFeat: any = null;
-        candidates.forEach((f: any) => {
-          const coords = f.geometry.coordinates as [number, number];
+        let nearestFeat: any = null; // keep loose here to satisfy TS narrowing on filter result + guard (type improvement tradeoff)
+        candidates.forEach((f) => {
+          const coords = f.geometry.coordinates;
           const d = distance(user, coords, { units: "miles" });
           if (d < minD) {
             minD = d;
@@ -370,24 +434,17 @@ function App() {
         });
 
         if (nearestId && nearestFeat) {
+          const nf = nearestFeat;
           setSelectedId(nearestId);
           const m = mapRef.current;
           if (m) {
-            const [lon, lat] = nearestFeat.geometry.coordinates as [
-              number,
-              number,
-            ];
+            const [lon, lat] = nf.geometry.coordinates;
             m.flyTo({ center: [lon, lat], zoom: 13, duration: 700 });
-            setTimeout(() => {
-              if (mapRef.current) {
-                new maplibregl.Popup()
-                  .setLngLat([lon, lat])
-                  .setHTML(
-                    `<strong>Nearest to you (matches filters):</strong> ${nearestFeat.properties.name}<br/>~${minD.toFixed(1)} miles`,
-                  )
-                  .addTo(mapRef.current);
-              }
-            }, 750);
+            showPopupAfterFly(
+              m,
+              [lon, lat],
+              `<strong>Nearest to you (matches filters):</strong> ${nf.properties.name}<br/>~${minD.toFixed(1)} miles`,
+            );
           }
         }
         setIsLocating(false);
@@ -499,6 +556,7 @@ function App() {
               key={t}
               onClick={() => toggleType(t)}
               className={`filter-chip ${activeTypes.includes(t) ? "active" : ""}`}
+              aria-pressed={activeTypes.includes(t)}
             >
               {t}
             </button>
@@ -584,6 +642,7 @@ function App() {
                           toggleSaved(site.id);
                         }}
                         className="text-[10px] px-1 py-0.5 mt-0.5 text-emerald-700 hover:text-emerald-900"
+                        aria-pressed={isSaved(site.id)}
                         title={
                           isSaved(site.id) ? "Remove from saved" : "Save spot"
                         }
@@ -611,8 +670,9 @@ function App() {
             Get Directions (Google intent), share, save, close. Smallest overlay (no map rewrite). */}
         {selectedSite && (
           <div
-            className="rich-detail fixed inset-x-0 bottom-0 z-[60] flex flex-col bg-white border-t md:border-t-0 md:border-l md:inset-y-0 md:left-auto md:right-0 md:w-96 md:max-h-full overflow-hidden rounded-t-xl md:rounded-t-none md:rounded-l-xl"
+            className="rich-detail fixed inset-x-0 bottom-0 z-[60] flex flex-col bg-white border-t max-h-[70vh] md:max-h-[calc(100vh-4rem)] md:top-16 md:inset-y-auto md:left-auto md:right-0 md:w-96 overflow-hidden rounded-t-xl md:rounded-t-none md:rounded-l-xl md:border-t-0 md:border-l"
             role="dialog"
+            aria-modal="true"
             aria-label="Access point details"
           >
             {/* Header bar with actions */}
@@ -636,6 +696,7 @@ function App() {
                   <button
                     onClick={() => toggleSaved(selectedSite.id)}
                     className="action-btn text-xs"
+                    aria-pressed={isSaved(selectedSite.id)}
                     title={
                       isSaved(selectedSite.id) ? "Unsave" : "Save to My Spots"
                     }
@@ -739,7 +800,7 @@ function App() {
                   <a
                     href={selectedSite.regulations.url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-block text-blue-700 underline text-sm hover:text-blue-900"
                   >
                     View current DNR fishing regulations ↗
@@ -753,36 +814,41 @@ function App() {
 
               {/* Prominent disclaimer + citations (DESIGN non-negotiable) */}
               <div className="disclaimer mt-2">
-                <strong>Disclaimer:</strong> This is not legal advice. Always
-                verify current regulations, property boundaries, hours, and
-                conditions on-site and with official Michigan DNR sources before
-                fishing. Data is from the curated PR 1 sample only.
+                <strong>Disclaimer:</strong> {DATA_DISCLAIMER}
               </div>
 
               <div className="pt-2 border-t text-[11px]">
                 <div className="font-medium text-slate-700 mb-0.5">
                   Sources &amp; citations
                 </div>
-                <ul className="space-y-0.5">
-                  {selectedSite.sources.map((s: SourceCitation, i: number) => (
-                    <li key={i}>
-                      <a
-                        href={s.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {s.name}
-                      </a>
-                      <span className="text-slate-400">
-                        {" "}
-                        • retrieved {s.retrieved}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                {selectedSite.sources && selectedSite.sources.length > 0 ? (
+                  <ul className="space-y-0.5">
+                    {selectedSite.sources.map(
+                      (s: SourceCitation, i: number) => (
+                        <li key={i}>
+                          <a
+                            href={s.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            {s.name}
+                          </a>
+                          <span className="text-slate-400">
+                            {" "}
+                            • retrieved {s.retrieved}
+                          </span>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                ) : (
+                  <div className="text-slate-500">
+                    No citation sources provided.
+                  </div>
+                )}
                 <div className="text-[10px] text-slate-500 mt-1">
-                  last verified {selectedSite.last_verified}
+                  last verified {selectedSite.last_verified ?? "unknown"}
                 </div>
               </div>
             </div>
@@ -793,8 +859,9 @@ function App() {
             Click row to fly+select (opens rich detail). Smallest viable modal-style panel. */}
         {showSaved && (
           <div
-            className="saved-panel fixed inset-x-0 bottom-0 z-[70] md:inset-y-0 md:left-auto md:right-0 md:w-96 flex flex-col bg-white border-t md:border-t-0 md:border-l shadow-2xl rounded-t-xl md:rounded-t-none md:rounded-l-xl overflow-hidden"
+            className="saved-panel fixed inset-x-0 bottom-0 z-[70] max-h-[70vh] md:max-h-[calc(100vh-4rem)] md:top-16 md:inset-y-auto md:left-auto md:right-0 md:w-96 flex flex-col bg-white border-t md:border-t-0 md:border-l shadow-2xl rounded-t-xl md:rounded-t-none md:rounded-l-xl overflow-hidden"
             role="dialog"
+            aria-modal="true"
             aria-label="My Saved Spots"
           >
             <div className="md:hidden">
@@ -873,7 +940,7 @@ function App() {
           </a>
           , <code>data/processed/manifest.json</code>,{" "}
           <code>DATA-VERIFICATION.md</code>. This is not legal advice — verify
-          on-site and with current DNR regulations.{" "}
+          on-site and with current DNR regulations. (Prototype.){" "}
           <span className="font-mono">npm run dev</span> prototype.
         </footer>
       </main>
