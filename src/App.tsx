@@ -2,7 +2,14 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import { distance } from "@turf/distance";
 import { Protocol } from "pmtiles";
+import {
+  OfflinePlugin,
+  OFFLINE_STATUS,
+} from "@makina-corpus/maplibre-offline-pmtiles";
 import rawAccess from "../data/processed/access_points_sample.geojson?raw";
+
+// PR 5: register offline protocol at module load (required before any MapLibre using offline-pmtiles:// sources)
+OfflinePlugin.registerProtocol(maplibregl);
 const accessGeoJson = JSON.parse(rawAccess) as any; // initial any; narrowed below after interfaces (see Issue 5)
 
 // Minimal shape for the real PR1 sample (full provenance in the GeoJSON)
@@ -83,6 +90,87 @@ function App() {
   const [geoError, setGeoError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
+  // PR 5: PWA + offline PMTiles region download + quota (OPFS via maplibre-offline-pmtiles per DESIGN PR5)
+  // Smallest addition: states + handlers + minimal UI row + graceful banner. No new layers or major refactors.
+  const offlinePluginRef = useRef<OfflinePlugin | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [offlineDownloaded, setOfflineDownloaded] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("fishmap_offline_region") === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [downloadStatus, setDownloadStatus] = useState<string>("");
+  const [storageInfo, setStorageInfo] = useState<{
+    used: number;
+    quota: number;
+    percent: number;
+  } | null>(null);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  const [offlineError, setOfflineError] = useState<string | null>(null);
+
+  // PR 5 offline handlers (declared early so useEffects can reference; follows existing localStorage/useRef patterns exactly)
+  const refreshStorageInfo = async () => {
+    if (!offlinePluginRef.current)
+      offlinePluginRef.current = new OfflinePlugin();
+    try {
+      const info = await offlinePluginRef.current.getStorageUsage();
+      setStorageInfo(info);
+    } catch (e) {
+      console.warn("fishmap: storage query failed", e);
+    }
+  };
+
+  const handleDownloadRegion = async () => {
+    if (!offlinePluginRef.current)
+      offlinePluginRef.current = new OfflinePlugin();
+    // Use same URL as current basemap for fidelity to "current map state".
+    // In production (post PR4 R2 + regional extract) this would target the ~9-14MB gr-region z12 extract (see docs/pmtiles-extract-dryrun.txt).
+    const url = "https://build.protomaps.com/20260526.pmtiles";
+    const name = "grand-rapids-region";
+    setDownloadProgress(0);
+    setDownloadStatus("START");
+    setOfflineError(null);
+    try {
+      await offlinePluginRef.current.downloadMap(url, name, (p: any) => {
+        const code = p?.code || "";
+        setDownloadStatus(code);
+        if (p?.progress != null)
+          setDownloadProgress(Math.round(Number(p.progress)));
+        if (code === OFFLINE_STATUS.COMPLETE) {
+          try {
+            localStorage.setItem("fishmap_offline_region", "true");
+          } catch {}
+          setOfflineDownloaded(true);
+          refreshStorageInfo();
+          setDownloadStatus(
+            "COMPLETE — reload page to activate offline basemap",
+          );
+        }
+        if (code === OFFLINE_STATUS.ERROR_QUOTA) {
+          setOfflineError(
+            "Storage quota exceeded. Free space or clear other data.",
+          );
+        }
+      });
+    } catch (e: any) {
+      setDownloadStatus("ERROR");
+      setOfflineError(e?.message || "Download failed (network or quota)");
+    }
+  };
+
+  const handleInstallPrompt = async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    try {
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      console.log("fishmap: install prompt outcome", outcome);
+    } catch {}
+    setDeferredInstallPrompt(null);
+  };
+
   // PR 3: My Saved Spots (localStorage + JSON, per DESIGN: Dexie only if simplest; here pure localStorage)
   const [savedSpotIds, setSavedSpotIds] = useState<string[]>(() => {
     try {
@@ -115,6 +203,29 @@ function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [selectedId, showSaved]);
+
+  // PR 5: online/offline listeners + beforeinstallprompt (natural install prompt) + initial quota snapshot
+  useEffect(() => {
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+
+    const onBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", onBeforeInstall as any);
+
+    // initial storage info (OPFS quota awareness)
+    refreshStorageInfo();
+
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall as any);
+    };
+  }, []);
 
   // Real data wired from PR 1 (no more hardcoded)
   const allFeatures = typedAccessGeoJson.features;
@@ -266,22 +377,34 @@ function App() {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
+    if (!offlinePluginRef.current) {
+      offlinePluginRef.current = new OfflinePlugin();
+    }
+
     // Register PMTiles protocol handler once (required for any pmtiles:// sources)
     const protocol = new Protocol();
     maplibregl.addProtocol("pmtiles", protocol.tile);
+    // offline-pmtiles:// already registered at module top via PR 5 lib
+
+    // PR 5: choose source at init time — offline protocol if region previously downloaded (persisted flag)
+    // After download completes user is prompted to reload so this effect captures the offline url.
+    const protomapsUrl = offlineDownloaded
+      ? "offline-pmtiles://grand-rapids-region"
+      : "pmtiles://https://build.protomaps.com/20260526.pmtiles";
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
       // PR4: Protomaps basemap as vector tiles (replaces demo raster-ish style).
       // Uses public build (see docs/ASSET-HOSTING.md + dry-run for regional plan).
       // Minimal layers for context (water/roads) to prove vector tile basemap; access overlaid.
+      // PR 5: url may be offline-pmtiles:// after region download + reload (OPFS backed, no net required).
       style: {
         version: 8,
         glyphs: "https://cdn.protomaps.com/fonts/pbf/{fontstack}/{range}.pbf",
         sources: {
           protomaps: {
             type: "vector",
-            url: "pmtiles://https://build.protomaps.com/20260526.pmtiles",
+            url: protomapsUrl,
             attribution: "© Protomaps © OpenStreetMap contributors",
           },
         },
@@ -521,6 +644,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      {/* PR 5: offline status banner (graceful degradation; visible in airplane mode) */}
+      {!isOnline && (
+        <div className="bg-amber-500 text-white text-center text-xs py-0.5 font-medium">
+          Offline mode — app, search, details, saved spots, and downloaded map
+          region are fully functional.
+        </div>
+      )}
       <header className="border-b bg-white">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
@@ -551,6 +681,65 @@ function App() {
           citations/regulations, Get Directions, Share, My Saved Spots
           (localStorage). Built on PR 2 map. Sample data only (PR 6 adds full
           dataset).
+        </div>
+
+        {/* PR 5: Full PWA + Offline Region Download (smallest addition per DESIGN + user instructions).
+            One download -> map+search+details+saved work offline. Quota, banner, progress, install prompt.
+            Uses current map state (no new layers). Reload after download to switch basemap to OPFS. */}
+        <div className="mb-3 p-2 bg-sky-50 border border-sky-200 rounded text-xs flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-medium text-sky-800">PR 5 Offline:</span>
+          <span
+            className={
+              isOnline ? "text-emerald-700" : "text-amber-700 font-semibold"
+            }
+          >
+            {isOnline ? "Online" : "OFFLINE"}
+          </span>
+          <button
+            onClick={refreshStorageInfo}
+            className="action-btn text-[10px] px-1.5 py-0.5"
+            title="Refresh OPFS storage usage/quota"
+          >
+            💾{" "}
+            {storageInfo
+              ? `${(storageInfo.used / 1024 / 1024).toFixed(1)}MB`
+              : "Storage"}
+          </button>
+          <button
+            onClick={handleDownloadRegion}
+            disabled={
+              downloadStatus.startsWith("START") ||
+              downloadStatus.startsWith("PROGRESS")
+            }
+            className="action-btn primary text-[10px] px-1.5 py-0.5"
+            title="Download Grand Rapids Region for Offline Use (stores PMTiles in OPFS; fulfills mobile field requirement)"
+          >
+            ⬇️ Download Grand Rapids Region for Offline Use
+          </button>
+          {downloadProgress > 0 && downloadProgress < 100 && (
+            <progress
+              value={downloadProgress}
+              max={100}
+              className="w-20 align-middle h-2"
+            />
+          )}
+          {downloadStatus && (
+            <span className="font-mono text-sky-700">{downloadStatus}</span>
+          )}
+          {offlineError && <span className="text-red-600">{offlineError}</span>}
+          {deferredInstallPrompt && (
+            <button
+              onClick={handleInstallPrompt}
+              className="action-btn text-[10px] px-1.5 py-0.5 bg-emerald-700 text-white border-emerald-700"
+            >
+              📲 Install App
+            </button>
+          )}
+          {offlineDownloaded && (
+            <span className="text-emerald-700 font-medium">
+              Region cached ✓ (reload to use for basemap)
+            </span>
+          )}
         </div>
 
         {/* Filters + Near me (search + shore toggle + type chips + geolocation + turf) */}

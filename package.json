@@ -11,6 +11,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" || echo 'prettier not fully configured (PR1 stub)'"
   },
   "dependencies": {
+    "@makina-corpus/maplibre-offline-pmtiles": "^2.1.1",
     "@turf/distance": "^7.3.5",
     "maplibre-gl": "^4.7.1",
     "pmtiles": "^4.4.1",
@@ -29,6 +30,7 @@
     "prettier": "^3.3.2",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.5.3",
-    "vite": "^5.4.1"
+    "vite": "^5.4.1",
+    "vite-plugin-pwa": "^0.20.5"
   }
 }
