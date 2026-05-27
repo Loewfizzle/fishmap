@@ -6,12 +6,13 @@ PIP := pip
 NPM := npm
 DOCKER := docker
 
-.PHONY: help etl-sample etl-validate fmt lint clean frontend-dev
+.PHONY: help etl-sample etl-validate tiles-sample fmt lint clean frontend-dev
 
 help:
-	@echo "Fishmap targets (PR 1 foundation):"
+	@echo "Fishmap targets (PR 1 foundation; PR4 adds tiles):"
 	@echo "  etl-sample     - Run minimal ETL producing validated sample data + manifest (the key deliverable)"
 	@echo "  etl-validate   - Validate existing processed sample against schema + citation rules"
+	@echo "  tiles-sample   - PR4: build small test PMTiles via scripts/tile.py (tippecanoe wrapper) on sample"
 	@echo "  fmt            - Format Python (ruff) + TS/JS (prettier)"
 	@echo "  lint           - Lint Python (ruff) + TS (eslint) + schema check"
 	@echo "  frontend-dev   - Start Vite dev server (after npm install)"
@@ -25,6 +26,12 @@ etl-sample:
 
 etl-validate:
 	$(PYTHON) -m scripts.validate_sample
+
+# PR 4: thin tippecanoe wrapper target. Produces small thematic PMTiles from the
+# PMTiles-ready GeoJSON emitted by etl-sample. Uses conservative zooms for sample.
+# In real runs (Docker/CI) tippecanoe binary is present; locally may print guidance.
+tiles-sample:
+	$(PYTHON) -m scripts.tile --input data/processed/access_points_sample.geojson --output /tmp/fishmap-access-sample.pmtiles --maxzoom 10
 
 # Formatting & lint (CI uses these)
 # Note: ruff covers black-compatible fmt + lint for Python

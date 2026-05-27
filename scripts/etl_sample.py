@@ -132,7 +132,10 @@ def build_manifest(sites: list[dict[str, Any]], geojson_text: str) -> dict[str, 
             "url": "https://gis-midnr.opendata.arcgis.com/maps/3eaf9804bf6f4bafb8e03aea660c9fce",
             "downloaded": "2026-05-20 (manual verified extract for PR1 bootstrap)",
             "record_count": 4,  # sample only
-            "sha256": "N/A-manual-curation-pr1-" + _compute_sha256("dnr+grdata+ kent-2026-05")[:12],  # Issue 16: explicit N/A for hand-curated (no raw download artifacts in PR1)
+            "sha256": "N/A-manual-curation-pr1-"
+            + _compute_sha256("dnr+grdata+ kent-2026-05")[
+                :12
+            ],  # Issue 16: explicit N/A for hand-curated (no raw download artifacts in PR1)
             "notes": "Hand-curated from portal patterns + public park maps for 4 high-confidence shore sites. Full automation later.",
         },
         {
@@ -140,7 +143,10 @@ def build_manifest(sites: list[dict[str, Any]], geojson_text: str) -> dict[str, 
             "url": "https://grdata-grandrapids.opendata.arcgis.com/ + https://kentcountymi-accesskent.opendata.arcgis.com/",
             "downloaded": "2026-05-20",
             "record_count": 4,
-            "sha256": "N/A-manual-curation-pr1-" + _compute_sha256("grdata+kent-2026-05")[:12],  # Issue 16: explicit N/A for hand-curated (no raw download artifacts in PR1)
+            "sha256": "N/A-manual-curation-pr1-"
+            + _compute_sha256("grdata+kent-2026-05")[
+                :12
+            ],  # Issue 16: explicit N/A for hand-curated (no raw download artifacts in PR1)
         },
     ]
 
@@ -207,6 +213,10 @@ def main() -> None:
     # 5. Write outputs
     ACCESS_OUT.write_text(geojson_text, encoding="utf-8")
     print(f"Wrote {ACCESS_OUT}")
+
+    # PR 4 (smallest export logic): the ACCESS_OUT GeoJSON written above is the
+    # PMTiles-ready input for scripts/tile.py. Nested props ok (tippecanoe handles).
+    # Future PR6: emit water_bodies FC for dedicated water.pmtiles layer here.
 
     manifest = build_manifest(enriched, geojson_text)
     MANIFEST_OUT.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

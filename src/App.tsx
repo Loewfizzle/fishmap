@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import { distance } from "@turf/distance";
+import { Protocol } from "pmtiles";
 import rawAccess from "../data/processed/access_points_sample.geojson?raw";
 const accessGeoJson = JSON.parse(rawAccess) as any; // initial any; narrowed below after interfaces (see Issue 5)
 
@@ -258,12 +259,51 @@ function App() {
   }
 
   // One-time MapLibre init with real GeoJSON source + circle layer + click handlers
+  // PR 4: Protomaps basemap (vector tiles via PMTiles protocol) + existing custom access overlay.
+  // Smallest integration: inline minimal style sourcing the public Protomaps build (full-planet
+  // but range-request efficient; regional extract via dry-run committed in docs). Custom access
+  // remains GeoJSON for PR1 sample (not "large"; full switch + removal in PR6 when thematic PMTiles ready).
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
+    // Register PMTiles protocol handler once (required for any pmtiles:// sources)
+    const protocol = new Protocol();
+    maplibregl.addProtocol("pmtiles", protocol.tile);
+
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: "https://demotiles.maplibre.org/style.json",
+      // PR4: Protomaps basemap as vector tiles (replaces demo raster-ish style).
+      // Uses public build (see docs/ASSET-HOSTING.md + dry-run for regional plan).
+      // Minimal layers for context (water/roads) to prove vector tile basemap; access overlaid.
+      style: {
+        version: 8,
+        glyphs: "https://cdn.protomaps.com/fonts/pbf/{fontstack}/{range}.pbf",
+        sources: {
+          protomaps: {
+            type: "vector",
+            url: "pmtiles://https://build.protomaps.com/20260526.pmtiles",
+            attribution: "© Protomaps © OpenStreetMap contributors",
+          },
+        },
+        layers: [
+          // Minimal basemap context layers from Protomaps vector tiles (demonstrates integration)
+          {
+            id: "water",
+            source: "protomaps",
+            "source-layer": "water",
+            filter: ["==", ["geometry-type"], "Polygon"],
+            type: "fill",
+            paint: { "fill-color": "#a5d8ff" },
+          },
+          {
+            id: "roads",
+            source: "protomaps",
+            "source-layer": "roads",
+            type: "line",
+            paint: { "line-color": "#e5e7eb", "line-width": 0.8 },
+          },
+        ],
+      },
       center: [-85.6681, 42.9634], // AOI center from manifest + DESIGN
       zoom: 10.2,
     });
