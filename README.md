@@ -1,88 +1,113 @@
 # Fishmap
 
-Accurate, mobile-first interactive map of public **shore, bank, dock, pier, wade, and road-end fishing access** within a 40-mile radius of Grand Rapids, Michigan.
+**An accurate, mobile-first map for finding public shore, bank, dock, and pier fishing access around Grand Rapids, Michigan.**
 
-**Strict focus**: Only confirmed or high-likelihood public shore/dock access. Every feature carries full citations and `last_verified` dates. Static JAMstack + MapLibre + PMTiles for instant loads and full offline use after one regional download.
+Fishmap helps anglers without boats answer the question: *"Where can I legally fish from the shore near me today?"*
+
+- **Strict public access focus** — Only confirmed or high-likelihood public shore/dock access points.
+- **Fully cited** — Every location includes sources and verification dates from Michigan DNR, county, and city open data.
+- **Works offline** — Download the region once and the entire app (map + details + saved spots) works without cell service.
+- **Production-ready** — Clean PWA, strong security headers, and automation for future data updates.
+
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Built with Vite + React + MapLibre](https://img.shields.io/badge/Built%20with-Vite%20%2B%20React%20%2B%20MapLibre-646cff)
 
 ---
 
-> **⚠️ IMPORTANT LEGAL DISCLAIMER**  
-> Data is compiled from public sources (Michigan DNR, USGS, county/city GIS portals). **Always verify current conditions, property boundaries, regulations, and posted signs on site before fishing or accessing any location.** Fishmap does not grant legal access and is not legal advice. Users assume all risk. See full details below and in the app UI (footer + every detail panel).
+## Features
 
----
+- Interactive map with Protomaps vector tiles
+- Powerful "Shore & Dock Only" filtering + per-type chips
+- "Near Me" using your location + smart filtering
+- Rich detail panels (mobile bottom sheet + desktop) with parking, facilities, ADA, species, regulations links, and full citations
+- Save favorite spots that persist locally
+- Full PWA support + offline map region downloads (OPFS)
+- Prominent legal disclaimers on every screen
 
-- **Target users**: Anglers without boats who want reliable "where can I fish from shore near me today?" answers in the field.
-- **Data philosophy**: Python ETL (committed in-repo) is source of truth. Authoritative sources (Michigan DNR MiBFF, USGS hydro, Kent/GR/county GIS) + explicit manual verification. No user-generated content as primary.
-- **Scope**: 40-mile geodesic buffer around 42.9634,-85.6681 (Grand Rapids). Shore-first; boat ramps secondary/filterable.
+## Getting Started
 
-## Quick Start (ETL Sample)
-
-```bash
-# Native (requires Python 3.11+, deps)
-make etl-sample
-# or
-python -m scripts.etl_sample
-
-# Reproducible via Docker (recommended for GDAL/tippecanoe)
-docker build -f Dockerfile.etl -t fishmap-etl .
-# Unix / Git Bash:
-docker run --rm -v $(pwd)/data:/data fishmap-etl make etl-sample
-# Windows PowerShell (Issue 5 fix):
-#   docker run --rm -v ${PWD}/data:/data fishmap-etl make etl-sample
-#   (Docker Desktop Windows volume paths may need /c/Users/... or use WSL2 for best results)
-```
-
-This produces:
-- `data/processed/access_points_sample.geojson` (validated against schema, 4–5 real public shore sites)
-- `data/processed/manifest.json` (full provenance, SHA256s, citations, etl_run_date)
-
-The sample is the first committed authoritative data artifact.
-
-## Development
-
-See [DESIGN.md](./DESIGN.md) for full architecture, ETL Reality notes (pseudocode for classification, AOI construction), data sources, and the 8-PR plan.
-
-### Frontend (stub in PR 1; full in PR 2)
+### Run the App Locally
 
 ```bash
+# Install dependencies
 npm install
+
+# Start the development server
 npm run dev
 ```
 
-Vite + React 18 + TS + Tailwind + MapLibre skeleton. Loads the PR1 sample GeoJSON. "Shore & Dock Only" filter and rich interactions land in later PRs.
+Open the URL shown in your terminal (usually `http://localhost:5173`).
 
-### ETL
+### Build for Production
 
-- `scripts/aoi.py` — generates committed `data/aoi.geojson` (exact 40-mile buffer)
-- `scripts/classify.py`, `enrich.py` — implement shore classification heuristics from DESIGN (direct attrs + park/hydro buffer inference, private exclusion)
-- `docs/ETL-SPEC.md` — contracts + JSON Schema
-- `Makefile` — `etl-sample`, `etl-validate`, etc.
-- `Dockerfile.etl` — pins Python + GDAL + tippecanoe for reproducibility
+```bash
+npm run build
+npm run preview
+```
 
-## Data
+### Regenerate Sample Data (Optional)
 
-All features include:
-- `access_type`: bank | dock | pier | wade | road_end | park_shore
-- `access_quality`: high | medium-high | ...
-- `sources[]` with name, url, retrieved
-- `last_verified`
+```bash
+# Using Docker (recommended)
+docker build -f Dockerfile.etl -t fishmap-etl .
+docker run --rm -v ${PWD}/data:/data fishmap-etl make etl-sample
 
-See `data/processed/DATA-VERIFICATION.md` for manual checks on the sample.
+# Or natively
+npm run etl-sample
+```
 
-**Legal / Disclaimers (prominent in UI + every feature)**: Data is compiled from public sources. Always verify current conditions, property boundaries, and regulations on site. Fishmap does not grant legal access. This is not legal advice. See the in-app persistent banner, detail panels, saved spots panel, and footer for the full disclaimer on every session and feature interaction. Public land access subject to Michigan recreational use statutes.
+## Tech Stack
+
+- **Frontend**: Vite + React 18 + TypeScript + Tailwind CSS + MapLibre GL
+- **Offline**: `vite-plugin-pwa` + `@makina-corpus/maplibre-offline-pmtiles`
+- **Data Pipeline**: Python + GDAL (via Docker for reproducibility)
+- **Hosting**: Vercel (recommended) + Cloudflare R2 for tiles
+- **Tooling**: GitHub Actions for CI and quarterly data refresh automation
+
+## Data Philosophy
+
+All data comes from authoritative public sources:
+- Michigan DNR (MiBFF / Boating Facilities)
+- County and city GIS portals (Kent, Ottawa, Allegan, etc.)
+- USGS hydrography
+
+Every access point includes:
+- `access_type`, `access_quality`, and inference flags
+- Full `sources[]` with links and retrieval dates
+- `last_verified` timestamp
+
+See [`data/processed/DATA-VERIFICATION.md`](data/processed/DATA-VERIFICATION.md) and [`docs/ETL-RUNBOOK.md`](docs/ETL-RUNBOOK.md) for details.
+
+**Important**: This is curated data demonstrating the platform. A full automated refresh process is available via the GitHub Actions workflow.
+
+## Legal Disclaimer
+
+**Data is compiled from public sources. Always verify current conditions, property boundaries, posted signs, and regulations on site before fishing or accessing any location.** Fishmap does not grant legal access and is not legal advice. Users assume all risk. See the full disclaimer in the app UI and README.
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). Data updates go through scripted ETL + PR with manifest diff + verification notes.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Data updates should go through the documented ETL process and include:
+- Updated `manifest.json`
+- Verification notes
+- A passing `make etl-validate`
+
+## Roadmap
+
+See [DESIGN.md](DESIGN.md) for the original architecture and 8-PR plan.
+
+Current status: All core PRs (1–7) are complete. The app is production-hardened with strong legal hygiene and automation in place.
+
+Next possible work:
+- First real automated data refresh using the PR 7 tooling
+- Optional user-submitted report feature (PR 8)
+- Mobile app polish and testing
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT © 2026
 
-## Status
+---
 
-PR 7 (Production Deployment, Observability, Legal Disclaimers, Launch Prep, and Sustainment Automation) complete. See DESIGN.md for roadmap. Production site on Vercel with strict CSP + R2 tiles (see docs/ASSET-HOSTING.md). Disclaimers prominent in shell, panels, README, and all features.
-
-Data updates: quarterly via documented ETL + PR automation (see docs/ETL-RUNBOOK.md).
-
-**Observability (PR 7)**: Privacy-respecting pageview + Core Web Vitals analytics via hosting provider (Vercel/Cloudflare; no trackers). See index.html placeholder + ASSET-HOSTING.md.
+**Built as a focused project to solve a real local problem**: helping people without boats find good public shore fishing near Grand Rapids.
