@@ -26,7 +26,7 @@ Be respectful. This project prioritizes data accuracy, citations, and legal clar
   - Before/after stats + citation for each changed/added feature
   - Link to source portal export (or archived copy in PR if large)
 
-See `docs/ETL-SPEC.md` and `scripts/classify.py` comments for the exact heuristics (direct DNR attrs > 30m hydro + public park intersection (private parcel exclusion) > road-end detection). `needs_review` flag is first-class.
+See `docs/ETL-SPEC.md`, `docs/ETL-RUNBOOK.md` (exact portal steps + full PR7 verification checklist), and `scripts/classify.py` comments for the exact heuristics (direct DNR attrs > 30m hydro + public park intersection (private parcel exclusion) > road-end detection). `needs_review` flag is first-class.
 
 ### Local dev (ETL)
 
@@ -49,6 +49,30 @@ Native:
 - TS/JS: prettier + eslint (via Vite template)
 - Commits: conventional or clear descriptive
 - Every data feature ships with citations — no exceptions, even in samples.
+
+## Data PRs (PR 7+ Sustainment — Critical Path)
+
+**Never hand-edit** processed GeoJSON or manifest. All changes via ETL.
+
+Required in every data PR (see full checklist in `docs/ETL-RUNBOOK.md`):
+- Run `make etl-sample` (or full) + `make etl-validate`
+- Updated `manifest.json` with fresh etl_run_date, source shas, coverage notes
+- Additions to `DATA-VERIFICATION.md` (portal links, screenshots, manual verification notes)
+- Before/after stats + per-feature citation diffs
+- Link to exact portal export(s) used
+- Update to `docs/DATA-SCHEMA.md` or `CHANGELOG.md` if schema/cadence notes change
+- Use GitHub issue templates ("Data Report" or "Suggest Access") for community input triage
+
+**Dry-run + automation**: Use the "ETL Dry-Run" workflow (dispatch) for manifest diff scaffolding before opening the PR. See `.github/workflows/etl-dry-run.yml`.
+
+**Contribution guide for data**:
+1. Open (or respond to) a "Suggest Access" or "Data Report" issue with evidence.
+2. Reproduce locally via ETL runbook steps (exact DNR/GRData/Ottawa/Allegan portal navigation).
+3. Verify against the full checklist.
+4. Open PR with title `[DATA] Quarterly refresh ...`, link this CONTRIBUTING + ETL-RUNBOOK.
+5. Maintainer reviews + merges; triggers deploy + (future) R2 tile update.
+
+See `docs/ETL-RUNBOOK.md` (portal steps + verification), `docs/DATA-SCHEMA.md`, `docs/ETL-SPEC.md`, and DESIGN.md for heuristics.
 
 ## Questions?
 

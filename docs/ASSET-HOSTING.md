@@ -109,3 +109,36 @@ Fallback if R2 unavailable: Backblaze B2 (similar economics + S3 compat).
 - pmtiles CLI: `pmtiles upload ...` or rclone / wrangler for automation.
 
 This decision is binding for v1 and all future data refreshes.
+
+## Production R2 Bucket + CORS Setup (PR 7)
+
+**Bucket naming convention (example)**: `fishmap-prod` (or `fishmap-tiles-<region>`). Public bucket, no auth for GET/HEAD/Range on objects under `/pmtiles/`.
+
+**One-time R2 configuration (via Cloudflare dashboard → R2 → bucket → Settings → CORS or `wrangler r2 bucket cors set`)**:
+
+Use the exact policy from the original decision (repeated for PR7 maintainers):
+
+```json
+[
+  {
+    "AllowedOrigins": ["*"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["Content-Length", "Content-Range", "Accept-Ranges", "ETag"],
+    "MaxAgeSeconds": 86400
+  }
+]
+```
+
+- Test after: `curl -I -H "Range: bytes=0-1023" https://<your-r2-public-domain>/pmtiles/2026-06-gr-basemap.pmtiles`
+- Expect 206 Partial Content + proper headers.
+- Update `src/App.tsx` PMTiles URLs (protomaps + custom layers) to the R2 HTTPS endpoints only on the production branch / after first upload in a data PR.
+- Vercel (app host) does not host PMTiles; R2 + CORS is required for browser Range requests from the map (pmtiles protocol + maplibre).
+
+**Integration with vercel.json (PR7)**: The app CSP (see `vercel.json`) explicitly allows `connect-src` to the R2 domain (add your R2 public hostname to the connect-src list on first real tile deploy if using a custom domain).
+
+**Rollback / versioned assets**: Use dated paths (e.g. `/pmtiles/2026-Q2/...`) in the manifest. Old objects retained for 90 days via lifecycle rule (cheap).
+
+**Cost / observability**: R2 free tier sufficient. Enable basic request metrics in dashboard for tile hit patterns (no PII).
+
+See DESIGN.md Hosting section and PR7 deliverable for full context. Reference this file in any data refresh PR that touches tile URLs.

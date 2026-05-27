@@ -1,0 +1,101 @@
+name: ETL Dry-Run + Manifest Diff + Draft PR Scaffolding (PR 7)
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: "Optional notes for this dry-run (e.g. 'pre-Q3 refresh check')"
+        required: false
+        default: "manual dry-run"
+  # Optional scheduled awareness (does not auto-merge data)
+  schedule:
+    - cron: "0 0 1 */3 *"  # quarterly reminder (Jan/Apr/Jul/Oct) — maintainer still dispatches real runs
+
+jobs:
+  etl-dry-run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write  # for future comment scaffolding if needed
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install deps + ruff
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+          pip install ruff
+          pip install -e .[dev] || true
+
+      - name: Ruff check (pre)
+        run: ruff check scripts/
+
+      - name: Run etl-sample + validate (dry, no side effects outside /tmp)
+        run: |
+          make etl-sample
+          make etl-validate
+          echo "ETL dry-run complete. Outputs in data/processed/ (for diff only)."
+
+      - name: Compute manifest diff vs main (scaffolding artifact)
+        run: |
+          git fetch origin main --quiet || true
+          echo "## Manifest Diff (vs origin/main)" > /tmp/diff.md
+          echo '```diff' >> /tmp/diff.md
+          git diff origin/main -- data/processed/manifest.json >> /tmp/diff.md || echo "(no diff or first run)" >> /tmp/diff.md
+          echo '```' >> /tmp/diff.md
+          cat /tmp/diff.md
+
+      - name: Generate draft data PR scaffolding (copy-paste into PR body)
+        run: |
+          cat > /tmp/pr-scaffold.md << 'PRBODY'
+          ## [DATA] Quarterly refresh $(date +%Y-Q%q) — X sites changed
+
+          **Dry-run trigger**: workflow_dispatch (notes: ${{ github.event.inputs.notes || 'manual' }})
+          **Run date**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          **Branch**: ${{ github.ref_name }}
+
+          ### Changes
+          - Feature count delta: (see manifest diff below)
+          - New/updated sites: 
+          - Classifications changed: 
+
+          ### Verification (per docs/ETL-RUNBOOK.md)
+          - [ ] Portal steps followed (DNR item XXX, GRData, Ottawa/Allegan)
+          - [ ] Full checklist in runbook completed
+          - [ ] DATA-VERIFICATION.md updated with screenshots/links
+          - [ ] R2 tiles (if changed): uploaded + CORS re-tested
+
+          ### Evidence
+          - Portal exports: [links]
+          - Before/after stats + citations
+
+          ### Rollback
+          Revert this commit + redeploy.
+
+          See: docs/ETL-RUNBOOK.md, docs/DATA-SCHEMA.md, CONTRIBUTING.md (data PR section), .github/ISSUE_TEMPLATE/data-report.md
+          PRBODY
+          echo "=== DRAFT PR SCAFFOLD (copy into your data PR description) ==="
+          cat /tmp/pr-scaffold.md
+          echo "=== END SCAFFOLD ==="
+
+      - name: Upload artifacts (diff + scaffold for download in Actions UI)
+        uses: actions/upload-artifact@v4
+        with:
+          name: etl-dry-run-${{ github.run_number }}
+          path: |
+            /tmp/diff.md
+            /tmp/pr-scaffold.md
+            data/processed/manifest.json
+          retention-days: 30
+
+      - name: Summary (visible in PR checks / workflow run)
+        run: |
+          echo "### ETL Dry-Run Summary (PR 7 automation)" >> $GITHUB_STEP_SUMMARY
+          echo "See artifacts for manifest diff and ready-to-use PR description template." >> $GITHUB_STEP_SUMMARY
+          echo "Next: open data PR using the scaffold + attach evidence per ETL-RUNBOOK checklist." >> $GITHUB_STEP_SUMMARY

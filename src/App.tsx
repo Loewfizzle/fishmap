@@ -94,9 +94,9 @@ const SHORE_TYPES = [
   "park_shore",
 ] as const;
 
-// Generalized disclaimer (avoids hardcoding "PR 1 sample" so it ages better post-PR6; Issue 10)
+// PR 7: Canonical prominent disclaimer (DESIGN + PR7 non-negotiable). Used in shell banner, detail panels, saved panel, footer. Generalized to age with production data.
 const DATA_DISCLAIMER =
-  "This is not legal advice. Always verify current regulations, property boundaries, hours, and conditions on-site and with official Michigan DNR sources before fishing. (Prototype sample data.)";
+  "Data is compiled from public sources. Always verify current conditions, property boundaries, and regulations on site. Fishmap does not grant legal access. This is not legal advice.";
 
 function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -739,6 +739,15 @@ function App() {
           untouched except light header polish.)
         </div>
 
+        {/* PR 7: Prominent persistent disclaimer in app shell (DESIGN non-negotiable; re-uses .disclaimer for consistency) */}
+        <div
+          className="disclaimer mb-4"
+          role="note"
+          aria-label="Legal disclaimer"
+        >
+          <strong>⚠️ Legal Disclaimer:</strong> {DATA_DISCLAIMER}
+        </div>
+
         {/* PR 5: Full PWA + Offline Region Download (per DESIGN + review fixes).
             Reactive (Issue 1): download COMPLETE auto-activates via mapVersion key (no reload).
             Guards (Issue 6): OPFS detect + re-dl prevention. Glyphs note (Issue 5): see lib README "Handling Offline Styles".
@@ -1025,7 +1034,7 @@ function App() {
         </section>
 
         {/* PR 3: Rich detail panel — mobile bottom sheet (default) + desktop side panel.
-            Follows DESIGN: full practical fields, clickable regs/citations, disclaimers prominent,
+            Follows DESIGN: full practical fields, clickable regs/citations, disclaimers prominent (now also in shell + saved per PR7),
             Get Directions (Google intent), share, save, close. Smallest overlay (no map rewrite). */}
         {selectedSite && (
           <div
@@ -1288,6 +1297,9 @@ function App() {
               <div className="mt-3 text-[10px] text-slate-400 border-t pt-2">
                 Stored locally in your browser only. Clear site data to reset.
               </div>
+              <div className="disclaimer mt-2 text-[10px]">
+                <strong>Disclaimer:</strong> {DATA_DISCLAIMER}
+              </div>
             </div>
           </div>
         )}
@@ -1298,8 +1310,10 @@ function App() {
             DESIGN.md
           </a>
           , <code>data/processed/manifest.json</code>,{" "}
-          <code>DATA-VERIFICATION.md</code>. This is not legal advice — verify
-          on-site and with current DNR regulations. (Prototype.){" "}
+          <code>DATA-VERIFICATION.md</code>. <strong>Disclaimer:</strong> Data
+          is compiled from public sources. Always verify current conditions,
+          property boundaries, and regulations on site. Fishmap does not grant
+          legal access. This is not legal advice.{" "}
           <span className="font-mono">npm run dev</span> prototype.
         </footer>
       </main>

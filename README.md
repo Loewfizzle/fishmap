@@ -4,6 +4,13 @@ Accurate, mobile-first interactive map of public **shore, bank, dock, pier, wade
 
 **Strict focus**: Only confirmed or high-likelihood public shore/dock access. Every feature carries full citations and `last_verified` dates. Static JAMstack + MapLibre + PMTiles for instant loads and full offline use after one regional download.
 
+---
+
+> **⚠️ IMPORTANT LEGAL DISCLAIMER**  
+> Data is compiled from public sources (Michigan DNR, USGS, county/city GIS portals). **Always verify current conditions, property boundaries, regulations, and posted signs on site before fishing or accessing any location.** Fishmap does not grant legal access and is not legal advice. Users assume all risk. See full details below and in the app UI (footer + every detail panel).
+
+---
+
 - **Target users**: Anglers without boats who want reliable "where can I fish from shore near me today?" answers in the field.
 - **Data philosophy**: Python ETL (committed in-repo) is source of truth. Authoritative sources (Michigan DNR MiBFF, USGS hydro, Kent/GR/county GIS) + explicit manual verification. No user-generated content as primary.
 - **Scope**: 40-mile geodesic buffer around 42.9634,-85.6681 (Grand Rapids). Shore-first; boat ramps secondary/filterable.
@@ -62,7 +69,7 @@ All features include:
 
 See `data/processed/DATA-VERIFICATION.md` for manual checks on the sample.
 
-**Legal**: This is not legal advice. Always verify current property status, regulations (DNR Fishing Regulations PDF), and posted signs on-site. Public land access subject to Michigan recreational use statutes.
+**Legal / Disclaimers (prominent in UI + every feature)**: Data is compiled from public sources. Always verify current conditions, property boundaries, and regulations on site. Fishmap does not grant legal access. This is not legal advice. See the in-app persistent banner, detail panels, saved spots panel, and footer for the full disclaimer on every session and feature interaction. Public land access subject to Michigan recreational use statutes.
 
 ## Contributing
 
@@ -74,4 +81,8 @@ MIT — see [LICENSE](./LICENSE).
 
 ## Status
 
-PR 1 bootstrap complete. See DESIGN.md for roadmap.
+PR 7 (Production Deployment, Observability, Legal Disclaimers, Launch Prep, and Sustainment Automation) complete. See DESIGN.md for roadmap. Production site on Vercel with strict CSP + R2 tiles (see docs/ASSET-HOSTING.md). Disclaimers prominent in shell, panels, README, and all features.
+
+Data updates: quarterly via documented ETL + PR automation (see docs/ETL-RUNBOOK.md).
+
+**Observability (PR 7)**: Privacy-respecting pageview + Core Web Vitals analytics via hosting provider (Vercel/Cloudflare; no trackers). See index.html placeholder + ASSET-HOSTING.md.
