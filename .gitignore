@@ -51,7 +51,9 @@ Thumbs.db
 *.swo
 *~
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
 *.code-workspace
 
 # TypeScript / Vite build artifacts (Issues 2+3 fix: never commit incremental state or transpiled config)
